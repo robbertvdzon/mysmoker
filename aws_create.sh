@@ -18,6 +18,7 @@ aws lambda create-function \
 	--function-name "$LAMBDA_FUNCTION_NAME" \
 	--runtime java8 \
 	--role "$LAMBDA_ROLE_ARN" \
+	--timeout 15 \
 	--handler my.service.StreamLambdaHandler::handleRequest \
 	--zip-file fileb://target/mysmoker-1.0-SNAPSHOT.jar --memory-size 512
 
