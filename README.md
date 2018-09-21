@@ -3,6 +3,10 @@
 PREREQUISITES
 You must have a basic role 'lambda_basic_execution' defined - this is what is created
 the first time you create a Lambda function in the web console
+To create the role:
+  - choose lambda and press "next: permissions"
+  - add "AmazonDynamoDBFullAccess" and press "next: review"
+  - set rolename to "lambda_basic_execution" and press "create role"
 
 Scripts and code based on:
 https://aws.amazon.com/blogs/opensource/java-apis-aws-lambda/

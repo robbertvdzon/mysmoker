@@ -21,6 +21,11 @@
             <artifactId>aws-serverless-java-container-jersey</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-dynamodb</artifactId>
+            <version>1.11.135</version>
+        </dependency>
 
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
