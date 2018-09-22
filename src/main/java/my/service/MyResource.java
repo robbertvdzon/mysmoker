@@ -38,7 +38,12 @@ public class MyResource {
         final AmazonDynamoDB ddb = getDynamoDb();
         List<SmokerSession> sessions = listAllSessions(ddb);
         List<String> sessionStrings = sessions.stream().map(session -> session.getSessionDateTime()).collect(Collectors.toList());
-        return Response.status(200).entity(sessionStrings).build();
+        return Response
+                .status(200)
+                .entity(sessionStrings)
+                . header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+                .allow("GET,OPTIONS").build();
     }
 
     @GET
@@ -47,7 +52,13 @@ public class MyResource {
     @Consumes(MediaType.WILDCARD)
     public Response lastsession() {
         final AmazonDynamoDB ddb = getDynamoDb();
-        return Response.status(200).entity(findLastSession(ddb)).build();
+        return Response
+                .status(200)
+                .entity(findLastSession(ddb))
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+                .allow("GET,OPTIONS")
+                .build();
     }
 
     @GET
@@ -60,7 +71,14 @@ public class MyResource {
         if (sessions.isEmpty()) {
             return Response.status(404).build();
         }
-        return Response.status(200).entity(sessions.get(0)).build();
+
+        return Response
+                .status(200)
+                .entity(sessions.get(0))
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+                .allow("GET,OPTIONS").
+                build();
     }
 
     @GET
