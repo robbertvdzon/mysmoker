@@ -11,6 +11,7 @@ import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import my.service.readstack.model.JsonSample;
 import my.service.readstack.model.JsonSmokerSession;
 import my.service.writestack.model.SmokerSession;
+import my.service.writestack.model.SmokerState;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,14 +20,14 @@ public class ReadService {
     public List<String> listsessions() {
         System.out.println("MyResource: listSessions");
         final AmazonDynamoDB ddb = getDynamoDb();
-        List<SmokerSession> sessions = listAllSessions(ddb);
-        return sessions.stream().map(session -> session.getSessionDateTime()).collect(Collectors.toList());
+        return listAllSessionIds(ddb);
     }
 
     public JsonSmokerSession lastsession() {
         System.out.println("MyResource: listSession");
         final AmazonDynamoDB ddb = getDynamoDb();
         SmokerSession lastSession = findLastSession(ddb);
+        System.out.println("Last session:"+lastSession);
         boolean lowSamples = lastSession.getSamplesCount() > 360 * 6; // after 6 hour, use slower sample rate
         List<JsonSample> samples = findSamples(ddb, lastSession.getSessionStartTime(), lowSamples);
         return new JsonSmokerSession(lastSession, samples);
@@ -43,6 +44,14 @@ public class ReadService {
         boolean lowSamples = smokerSession.getSamplesCount() > 360 * 6; // after 6 hour, use slower sample rate
         List<JsonSample> samples = findSamples(ddb, smokerSession.getSessionStartTime(), lowSamples);
         return new JsonSmokerSession(smokerSession, samples);
+    }
+
+    public double getTemp() {
+        System.out.println("get temp");
+        final AmazonDynamoDB ddb = getDynamoDb();
+
+        SmokerState smokerState = loadState(ddb);
+        return smokerState.getBbqTempSet();
     }
 
 
@@ -98,13 +107,30 @@ public class ReadService {
         }
     }
 
-
     private SmokerSession findLastSession(AmazonDynamoDB ddb) {
+        SmokerState smokerState = loadState(ddb);
+        System.out.println("smokerState="+smokerState);
+        long sessionDatetime = smokerState.getCurrentSessionStartTime();
+
         List<SmokerSession> scanResult = listAllSessions(ddb);
-        OptionalLong lastSession = scanResult.stream().mapToLong(sessions -> sessions.getLastSampleTime()).max();
-        long sessionDatetime = lastSession.orElseGet(() -> 0);
-        Optional<SmokerSession> last = scanResult.stream().filter(session -> session.getLastSampleTime() == sessionDatetime).findFirst();
+        Optional<SmokerSession> last = scanResult.stream().filter(session -> session.getSessionStartTime() == sessionDatetime).findFirst();
         return last.orElse(null);
+    }
+
+    private List<String> listAllSessionIds(AmazonDynamoDB ddb) {
+        DynamoDB dynamoDB = new DynamoDB(ddb);
+        Table table = dynamoDB.getTable("smokersamples");
+        ScanSpec scanSpec;
+        scanSpec = new ScanSpec();
+        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
+        List<String> result = new ArrayList<>();
+        Iterator<Item> iter = items.iterator();
+        while (iter.hasNext()) {
+            Item item = iter.next();
+            result.add(item.getString("sessionDateTime"));
+        }
+        result.sort(String::compareTo);
+        return result;
     }
 
     private List<SmokerSession> listAllSessions(AmazonDynamoDB ddb) {
@@ -113,7 +139,10 @@ public class ReadService {
         return mapper.scan(SmokerSession.class, scanExpression);
     }
 
+
     private List<SmokerSession> findSession(AmazonDynamoDB ddb, String dateTimeString) {
+
+
 /*
     FIX THIS CODE
         DynamoDBMapper mapper = new DynamoDBMapper(ddb);
@@ -126,6 +155,14 @@ public class ReadService {
                 .filter(s -> s.getSessionDateTime().equals(dateTimeString))
                 .collect(Collectors.toList());
 
+    }
+
+    private SmokerState loadState(AmazonDynamoDB ddb) {
+        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        List<SmokerState> allStates = mapper.scan(SmokerState.class, scanExpression);
+        Optional<SmokerState> stateOptional = allStates.stream().filter(s -> s.getId() == 1).findFirst();
+        return stateOptional.orElseThrow(()->new RuntimeException("State not found"));
     }
 
 

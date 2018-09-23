@@ -7,15 +7,48 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
+import com.amazonaws.services.dynamodbv2.document.*;
+import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
+import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
+import my.service.readstack.model.JsonSample;
 import my.service.writestack.model.Sample;
 import my.service.writestack.model.SmokerSession;
 import my.service.writestack.model.SmokerState;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class WriteService {
+
+    public void removeSession(String sessionId) {
+        System.out.println("removeSession "+sessionId);
+        final AmazonDynamoDB ddb = getDynamoDb();
+
+        createTablewhenNeeded(ddb);
+
+        List<SmokerSession> sessions = findSession(ddb, sessionId);
+        if (sessions.isEmpty()) {
+            return;
+        }
+        SmokerSession smokerSession = sessions.get(0);
+
+        removeSessionFromTable(sessionId, ddb);
+        removeSamplesFromTable(smokerSession.getSessionStartTime(), ddb);
+    }
+
+    public void setTemp(double temp) {
+        System.out.println("set temp "+temp);
+        final AmazonDynamoDB ddb = getDynamoDb();
+
+        createTablewhenNeeded(ddb);
+
+        SmokerState smokerState = loadState(ddb);
+        smokerState.setBbqTempSet(temp);
+        storeState(ddb, smokerState);
+    }
 
     public SmokerSession newsession() {
         System.out.println("MyResource: newSession");
@@ -138,6 +171,21 @@ public class WriteService {
         return new SmokerSession(currentDateString, currentTimestamp);
     }
 
+    private List<SmokerSession> findSession(AmazonDynamoDB ddb, String dateTimeString) {
+/*
+    FIX THIS CODE
+        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addExpressionAttributeNamesEntry("sessionDateTime", dateTimeString);
+        return mapper.scan(SmokerSession.class, scanExpression);
+*/
+        return listAllSessions(ddb)
+                .stream()
+                .filter(s -> s.getSessionDateTime().equals(dateTimeString))
+                .collect(Collectors.toList());
+
+    }
+
     private SmokerSession findSession(AmazonDynamoDB ddb, long sessionStartTime) {
         List<SmokerSession> allSessions = listAllSessions(ddb);
         Optional<SmokerSession> session = allSessions.stream().filter(s -> s.getSessionStartTime() == sessionStartTime).findFirst();
@@ -178,6 +226,48 @@ public class WriteService {
                     );
             dynamoDB.createTable(createTableRequest);
         }
+    }
+
+    private void removeSamplesFromTable(long sessionStartTime, AmazonDynamoDB ddb) {
+        DynamoDB dynamoDB = new DynamoDB(ddb);
+        Table table = dynamoDB.getTable("smokersamples");
+        System.out.println("delete all samples from session "+sessionStartTime);
+        findSamplesDates(ddb,sessionStartTime).forEach(l->{
+            System.out.println("delete all samples with time "+l);
+            DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
+                    .withPrimaryKey(new PrimaryKey("time", l));
+            table.deleteItem(deleteItemSpec);
+
+        });
+    }
+
+    private List<Long> findSamplesDates(AmazonDynamoDB ddb, long sessionStartTime) {
+        DynamoDB dynamoDB = new DynamoDB(ddb);
+        Table table = dynamoDB.getTable("smokersamples");
+        ScanSpec scanSpec = new ScanSpec()
+                .withFilterExpression("sessionStartTime = :sessionStartTime")
+                .withValueMap(new ValueMap()
+                        .withNumber(":sessionStartTime", sessionStartTime)
+                );
+        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
+            List<Long> result = new ArrayList<>();
+            Iterator<Item> iter = items.iterator();
+            while (iter.hasNext()) {
+                Item item = iter.next();
+                long time = item.getLong("time");
+                result.add(time);
+            }
+            return result;
+
+    }
+
+
+    private void removeSessionFromTable(String sessionId, AmazonDynamoDB ddb) {
+        DynamoDB dynamoDB = new DynamoDB(ddb);
+        Table table = dynamoDB.getTable("smokersessions");
+        DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
+                .withPrimaryKey(new PrimaryKey("sessionDateTime", sessionId));
+        table.deleteItem(deleteItemSpec);
     }
 
 

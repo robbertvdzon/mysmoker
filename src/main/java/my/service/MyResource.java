@@ -74,6 +74,33 @@ public class MyResource {
         return buildResponse(201, null);
     }
 
+    @GET
+    @Path("/removesession/{session}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.WILDCARD)
+    public Response removeSession(@PathParam("session") String session) {
+        writeService.removeSession(session);
+        return buildResponse(200, null);
+    }
+
+    @GET
+    @Path("/settemp/{temp}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.WILDCARD)
+    public Response setTemp(@PathParam("temp") double temp) {
+        writeService.setTemp(temp);
+        return buildResponse(200, null);
+    }
+
+    @GET
+    @Path("/gettemp")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.WILDCARD)
+    public Response getTemp() {
+        double temp = readService.getTemp();
+        return buildResponse(200, temp);
+    }
+
     private Response buildResponse(int statusCode, Object entity) {
         return Response
                 .status(statusCode)
