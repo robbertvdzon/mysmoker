@@ -7,12 +7,18 @@
         var smokerAPI = "https://mysmoker.api.vdzon.com/lastsession";
 
         $.get(smokerAPI, function (tempdata) {
+            var lastUpdate = new Date(tempdata.lastSampleTime)
+            var lastUpdateString = lastUpdate.getHours() + ":" + lastUpdate.getMinutes()+":"+lastUpdate.getSeconds();
+            $("#sessionDateId").text(tempdata.sessionDateTime);
+            $("#statusId").text("smoker:"+tempdata.lastBbqTemp+"("+tempdata.lastBbqSet+") temp, vlees:"+tempdata.lastMeatTemp+", zuurstofdoorvoer op "+tempdata.lastFan+"%");
+            $("#lastUpdateId").text("Laatste geupdate om "+lastUpdateString);
+
             var arr = [];
             arr.push(['Tijd', 'Temp', 'Fan', 'Set', 'Meat']);
 
-            var arrayLength = tempdata.temperatures.length;
+            var arrayLength = tempdata.samples.length;
             for (var i = 0; i < arrayLength; i++) {
-                var temp = tempdata.temperatures[i];
+                var temp = tempdata.samples[i];
                 arr.push([new Date(temp.t),temp.bt,temp.f,temp.bs,temp.mt]);
             }
             var data = google.visualization.arrayToDataTable(arr);
@@ -72,8 +78,14 @@
 
 <div style="text-align: center;">
     <div style="width: 100%; margin: 0 auto;"><h1>
-        Fri 21 September 15:51:35<br>19.53 graden (202) , vlees:21.17, zuurstofdoorvoer op 100%
+        <span id="sessionDateId"></span>
     </h1></div>
+    <div style="width: 100%; margin: 0 auto;">
+        <span id="lastUpdateId"></span>
+        <br>
+        <span id="statusId"></span>
+    </div>
+
 </div>
 
 
