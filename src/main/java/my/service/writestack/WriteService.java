@@ -6,9 +6,11 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 import com.amazonaws.services.dynamodbv2.model.*;
 import my.service.writestack.model.Sample;
 import my.service.writestack.model.SmokerSession;
+import my.service.writestack.model.SmokerState;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -18,12 +20,19 @@ public class WriteService {
     public SmokerSession newsession() {
         System.out.println("MyResource: newSession");
         final AmazonDynamoDB ddb = getDynamoDb();
+
+        createTablewhenNeeded(ddb);
+
         long currentTimeMillis = System.currentTimeMillis();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
         String currentDateString = simpleDateFormat.format(new Date(currentTimeMillis));
         SmokerSession smokerSession = new SmokerSession(currentDateString, currentTimeMillis);
         smokerSession.setLastSampleTime(currentTimeMillis);
         storeSession(ddb, smokerSession);
+
+        SmokerState smokerState = loadState(ddb);
+        smokerState.setCurrentSessionStartTime(smokerSession.getSessionStartTime());
+        storeState(ddb, smokerState);
         return smokerSession;
     }
 
@@ -86,6 +95,8 @@ public class WriteService {
     private void storeSession(AmazonDynamoDB ddb, SmokerSession smokerSession) {
         DynamoDBMapper mapper = new DynamoDBMapper(ddb);
         mapper.save(smokerSession);
+        System.out.println("session stored:"+smokerSession);
+
     }
 
     private void storeSample(AmazonDynamoDB ddb, Sample sample) {
@@ -93,24 +104,44 @@ public class WriteService {
         mapper.save(sample);
     }
 
+    private void storeState(AmazonDynamoDB ddb, SmokerState smokerState) {
+        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
+        mapper.save(smokerState);
+    }
+
+    private SmokerState loadState(AmazonDynamoDB ddb) {
+        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        List<SmokerState> allStates = mapper.scan(SmokerState.class, scanExpression);
+        Optional<SmokerState> stateOptional = allStates.stream().filter(s -> s.getId() == 1).findFirst();
+
+        return stateOptional.orElseGet(()->createNewState(ddb));
+    }
+
+    private SmokerState createNewState(AmazonDynamoDB ddb) {
+        SmokerState smokerState = SmokerState.builder().id(1).build();
+        storeState(ddb, smokerState);
+        return smokerState;
+    }
 
     private SmokerSession findOrCreateSession(AmazonDynamoDB ddb, long currentTimestamp) {
         long timeout = currentTimestamp - 1000 * 60 * 60;// minus one hour
-        SmokerSession lastSession = findLastSession(ddb);
+        SmokerState smokerState = loadState(ddb);
+        SmokerSession lastSession = findSession(ddb, smokerState.getCurrentSessionStartTime());
         if (lastSession != null && lastSession.getLastSampleTime() > timeout) {
             return lastSession;
         }
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
         String currentDateString = simpleDateFormat.format(new Date(currentTimestamp));
+        smokerState.setCurrentSessionStartTime(currentTimestamp);
+        storeState(ddb, smokerState);
         return new SmokerSession(currentDateString, currentTimestamp);
     }
 
-    private SmokerSession findLastSession(AmazonDynamoDB ddb) {
-        List<SmokerSession> scanResult = listAllSessions(ddb);
-        OptionalLong lastSession = scanResult.stream().mapToLong(sessions -> sessions.getLastSampleTime()).max();
-        long sessionDatetime = lastSession.orElseGet(() -> 0);
-        Optional<SmokerSession> last = scanResult.stream().filter(session -> session.getLastSampleTime() == sessionDatetime).findFirst();
-        return last.orElse(null);
+    private SmokerSession findSession(AmazonDynamoDB ddb, long sessionStartTime) {
+        List<SmokerSession> allSessions = listAllSessions(ddb);
+        Optional<SmokerSession> session = allSessions.stream().filter(s -> s.getSessionStartTime() == sessionStartTime).findFirst();
+        return session.orElse(null);
     }
 
     private List<SmokerSession> listAllSessions(AmazonDynamoDB ddb) {
@@ -123,6 +154,7 @@ public class WriteService {
     private void createTablewhenNeeded(AmazonDynamoDB dynamoDB) {
         createTable(dynamoDB, "smokersessions", "sessionDateTime", "S");
         createTable(dynamoDB, "smokersamples", "time", "N");
+        createTable(dynamoDB, "smokerstate", "id", "N");
     }
 
     private void createTable(AmazonDynamoDB dynamoDB, String tablename, String keyName, String keyType) {

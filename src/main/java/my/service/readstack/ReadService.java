@@ -8,13 +8,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import com.amazonaws.services.dynamodbv2.model.*;
 import my.service.readstack.model.JsonSample;
 import my.service.readstack.model.JsonSmokerSession;
-import my.service.writestack.model.Sample;
 import my.service.writestack.model.SmokerSession;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -130,8 +127,6 @@ public class ReadService {
                 .collect(Collectors.toList());
 
     }
-
-
 
 
 }
