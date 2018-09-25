@@ -46,12 +46,12 @@ public class ReadService {
         return new JsonSmokerSession(smokerSession, samples);
     }
 
-    public double getTemp() {
+    public long getTemp() {
         System.out.println("get temp");
         final AmazonDynamoDB ddb = getDynamoDb();
 
         SmokerState smokerState = loadState(ddb);
-        return smokerState.getBbqTempSet();
+        return Math.round(smokerState.getBbqTempSet());
     }
 
 
@@ -119,7 +119,7 @@ public class ReadService {
 
     private List<String> listAllSessionIds(AmazonDynamoDB ddb) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable("smokersamples");
+        Table table = dynamoDB.getTable("smokersessions");
         ScanSpec scanSpec;
         scanSpec = new ScanSpec();
         ItemCollection<ScanOutcome> items = table.scan(scanSpec);

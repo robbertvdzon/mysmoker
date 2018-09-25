@@ -4,14 +4,42 @@
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script type="text/javascript">
 
-        var smokerAPI = "https://mysmoker.api.vdzon.com/lastsession";
+        function newSession(){
+            var smokerAPI = "https://mysmoker.api.vdzon.com/newsession";
+            $.get(smokerAPI);
+            alert("created")
+        }
+        function setTemp(){
+            var temp = $("#smokerTempSetId").val();
+            var smokerAPI = "https://mysmoker.api.vdzon.com/settemp/"+temp;
+            $.get(smokerAPI)
+            alert("new temp set")
+        }
 
-        $.get(smokerAPI, function (tempdata) {
+        function removeSession(sessie){
+            var smokerAPI = "https://mysmoker.api.vdzon.com/removesession/"+sessie;
+            $.get(smokerAPI)
+            alert("removed "+sessie);
+        }
+
+        function showSession(sessie){
+            var smokerAPI = "https://mysmoker.api.vdzon.com/session/"+sessie;
+            $.get(smokerAPI, function (tempdata) {
+                showData(tempdata);
+            });
+        }
+
+        function showData(tempdata){
             var lastUpdate = new Date(tempdata.lastSampleTime)
             var lastUpdateString = lastUpdate.getHours() + ":" + lastUpdate.getMinutes()+":"+lastUpdate.getSeconds();
-            $("#sessionDateId").text(tempdata.sessionDateTime);
-            $("#statusId").text("smoker:"+tempdata.lastBbqTemp+"("+tempdata.lastBbqSet+") temp, vlees:"+tempdata.lastMeatTemp+", zuurstofdoorvoer op "+tempdata.lastFan+"%");
-            $("#lastUpdateId").text("Laatste geupdate om "+lastUpdateString);
+
+            $("#headerId").text(tempdata.lastBbqTemp+" graden");
+            $("#sessieNameId").text(tempdata.sessionDateTime);
+            $("#lastUpdateId").text(lastUpdateString);
+            $("#smokerTempId").text(tempdata.lastBbqTemp+" graden");
+            $("#meatTempId").text(tempdata.lastMeatTemp+" graden");
+            $("#zuurstofId").text(tempdata.lastFan+" %");
+
 
             var arr = [];
             arr.push(['Tijd', 'Temp', 'Fan', 'Set', 'Meat']);
@@ -62,7 +90,33 @@
                 view = new google.visualization.DataView(data);
                 chart.draw(view, options);
             }
+        }
 
+        var smokerAPI = "https://mysmoker.api.vdzon.com/gettemp";
+        $.get(smokerAPI, function (data) {
+            $("#smokerTempSetId").val(data);
+        });
+
+        var smokerAPI = "https://mysmoker.api.vdzon.com/listsessions";
+        $.get(smokerAPI, function (data) {
+            var table = document.getElementById("sessionTable");
+            var arrayLength = data.length;
+            for (var i = 0; i < arrayLength; i++) {
+                var session = data[i];
+                var row = table.insertRow(1);
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                var cell3 = row.insertCell(2);
+                cell1.innerHTML = "Sessie:"+session;
+                cell2.innerHTML = "<input type=\"button\" value=\"remove\" onclick='removeSession(\""+session+"\");' />"
+                cell3.innerHTML = "<input type=\"button\" value=\"show\" onclick='showSession(\""+session+"\");' />";
+            }
+        });
+
+
+        var smokerAPI = "https://mysmoker.api.vdzon.com/lastsession";
+        $.get(smokerAPI, function (tempdata) {
+            showData(tempdata);
         });
 
         google.charts.load('current', {'packages': ['corechart']});
@@ -76,15 +130,75 @@
 </head>
 <body>
 
-<div style="text-align: center;">
-    <div style="width: 100%; margin: 0 auto;"><h1>
-        <span id="sessionDateId"></span>
-    </h1></div>
-    <div style="width: 100%; margin: 0 auto;">
-        <span id="lastUpdateId"></span>
-        <br>
-        <span id="statusId"></span>
-    </div>
+<div style="text-align: center;" align="center" border="1">
+    <table width="100%" >
+        <tr>
+            <td></td>
+            <td align="center">
+                <table with="400px" >
+                    <tr>
+                        <td colspan="5" align="center">
+                            <h1><span id="headerId"></span></h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Laatste update:
+                        </td>
+                        <td>
+                            <span id="lastUpdateId"></span>
+                        </td>
+                        <td>
+                            &nbsp;&nbsp;
+                        </td>
+                        <td>
+                            Sessie:
+                        </td>
+                        <td>
+                            <span id="sessieNameId"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Smoker temp:
+                        </td>
+                        <td>
+                            <span id="smokerTempId"></span>
+                        </td>
+                        <td>
+                            &nbsp;&nbsp;
+                        </td>
+                        <td>
+                            Smoker temp set:
+                        </td>
+                        <td>
+                            <span id="smokerTempSetId2"></span>
+                            <input type='text' id='smokerTempSetId' value='' size="4"/>
+                            <input type="button" value="set temp" onclick="setTemp();" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Vlees temp:
+                        </td>
+                        <td>
+                            <span id="meatTempId"></span>
+                        </td>
+                        <td>
+                            &nbsp;&nbsp;
+                        </td>
+                        <td>
+                            Zuurstof doorvoer:
+                        </td>
+                        <td>
+                            <span id="zuurstofId"></span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td></td>
+        </tr>
+    </table>
 
 </div>
 
@@ -99,5 +213,27 @@
         </h1>
     </div>
 </div>
+
+<hr>
+
+
+<table width="100%" >
+    <tr>
+        <td></td>
+        <td align="center">
+            <table with="400px" id="sessionTable">
+                <tr>
+                    <td colspan="5" align="center">
+                        <input type="button" value="Start een nieuwe sessie" onclick="newSession();" />
+                    </td>
+                </tr>
+
+            </table>
+        </td>
+        <td></td>
+    </tr>
+</table>
+
+
 </body>
 </html>

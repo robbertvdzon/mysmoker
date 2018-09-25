@@ -97,7 +97,7 @@ public class MyResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.WILDCARD)
     public Response getTemp() {
-        double temp = readService.getTemp();
+        long temp = readService.getTemp();
         return buildResponse(200, temp);
     }
 
