@@ -12,7 +12,7 @@ public class ReadService {
     private SmokerQueryRepository smokerReadRepository = new SmokerQueryRepository();
 
     public List<String> listsessions() {
-        return smokerReadRepository.listsessions();
+        return smokerReadRepository.listAllSessionIds();
     }
 
     public JsonSmokerSession lastsession() {
