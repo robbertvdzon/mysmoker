@@ -2,6 +2,7 @@ package my.service.readstack.model;
 
 import com.amazonaws.services.dynamodbv2.document.Item;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import my.service.writestack.model.Sample;
@@ -9,13 +10,14 @@ import my.service.writestack.model.Sample;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class JsonSample {
-    private long s; // link to sessionStartTime
+    private long s;
     private long t = 0;
-    private double bt = 0; // smoker temp
-    private double mt = 0; // meat temp
-    private double f = 0; // fan
-    private double bs = 0; // smokertempset
+    private double bt = 0;
+    private double mt = 0;
+    private double f = 0;
+    private double bs = 0;
 
     public JsonSample(Sample sample) {
         s = sample.getSessionStartTime();
@@ -36,13 +38,14 @@ public class JsonSample {
         double fan = item.getDouble("fan");
         double bbqSet = item.getDouble("bbqSet");
         long time = item.getLong("time");
-        JsonSample sample = new JsonSample();
-        sample.setBt(bbqTemp);
-        sample.setBs(bbqSet);
-        sample.setMt(meatTemp);
-        sample.setF(fan);
-        sample.setT(time);
-        return sample;
+        return JsonSample
+                .builder()
+                .bt(bbqTemp)
+                .bs(bbqSet)
+                .mt(meatTemp)
+                .f(fan)
+                .t(time)
+                .build();
     }
 
 }

@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import my.service.writestack.model.SmokerSession;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +49,6 @@ public class JsonSmokerSession {
     public static String getSessionDateTimeFromItem(Item item) {
         return item.getString("sessionDateTime");
     }
-
 
     public int compareTo(JsonSmokerSession otherSession) {
         return getSessionDateTime().compareTo(otherSession.getSessionDateTime());

@@ -24,11 +24,11 @@ public class JsonSmokerState {
         int id = item.getInt("id");
         long currentSessionStartTime = item.getLong("currentSessionStartTime");
         double bbqTempSet = item.getDouble("bbqTempSet");
-        JsonSmokerState smokerState = new JsonSmokerState();
-        smokerState.setId(id);
-        smokerState.setCurrentSessionStartTime(currentSessionStartTime);
-        smokerState.setBbqTempSet(bbqTempSet);
-        return smokerState;
+        return JsonSmokerState.builder()
+                .id(id)
+                .currentSessionStartTime(currentSessionStartTime)
+                .bbqTempSet(bbqTempSet)
+                .build();
     }
 
     public int compareTo(JsonSmokerState otherState) {
