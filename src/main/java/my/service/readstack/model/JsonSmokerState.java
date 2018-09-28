@@ -12,10 +12,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SmokerState {
+public class JsonSmokerState {
     @DynamoDBHashKey
     private int id = 1;
     private long currentSessionStartTime = 0;
     private double bbqTempSet = 0;
+
+    public int compareTo(JsonSmokerState otherState) {
+        return this.getId() < otherState.getId() ? -1 : 1;
+    }
 
 }

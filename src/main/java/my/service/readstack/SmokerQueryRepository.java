@@ -9,106 +9,97 @@ import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import my.service.readstack.model.JsonSample;
+import my.service.readstack.model.JsonSmokerState;
 import my.service.writestack.model.SmokerSession;
-import my.service.writestack.model.SmokerState;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class SmokerQueryRepository {
-    private AmazonDynamoDB ddb = getDynamoDb();
+    private AmazonDynamoDB ddb;
+    private Table smokersamplesTable;
+    private Table smokersessionsTable;
+    private Table smokerstateTable;
 
+    public SmokerQueryRepository() {
+        ddb = getDynamoDb();
+        DynamoDB dynamoDB = new DynamoDB(ddb);
+        smokersamplesTable = dynamoDB.getTable("smokersamples");
+        smokersessionsTable = dynamoDB.getTable("smokersessions");
+        smokerstateTable = dynamoDB.getTable("smokerstate");
+    }
 
     public List<JsonSample> findSamples(long sessionStartTime, boolean lowSamples) {
-        DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable("smokersamples");
         ScanSpec scanSpec = getSamplesScanSpec(sessionStartTime, lowSamples);
-
-        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
-        List<JsonSample> result = new ArrayList<>();
-        for (Item item : items) {
-            double bbqTemp = item.getDouble("bbqTemp");
-            double meatTemp = item.getDouble("meatTemp");
-            double fan = item.getDouble("fan");
-            double bbqSet = item.getDouble("bbqSet");
-            long time = item.getLong("time");
-            JsonSample sample = new JsonSample();
-            sample.setBt(bbqTemp);
-            sample.setBs(bbqSet);
-            sample.setMt(meatTemp);
-            sample.setF(fan);
-            sample.setT(time);
-            result.add(sample);
-        }
-        // the list needs to be sorted!
-        // this is because the scan does not have any ordering. TODO: use a query: these do have an ordering
-        result.sort((m1, m2) -> m1.getT() < m2.getT() ? -1 : 1);
-
-        return result;
+        return getScanResult(scanSpec, smokersamplesTable, this::toJsonSample, JsonSample::compareTo);
     }
 
     public SmokerSession findLastSession() {
-        SmokerState smokerState = loadState();
-        System.out.println("smokerState=" + smokerState);
-        long sessionDatetime = smokerState.getCurrentSessionStartTime();
-
-        List<SmokerSession> scanResult = listAllSessions(ddb);
-        Optional<SmokerSession> last = scanResult.stream().filter(session -> session.getSessionStartTime() == sessionDatetime).findFirst();
-        return last.orElse(null);
+        long sessionDatetime = loadState().getCurrentSessionStartTime();
+        return findSession(session -> session.getSessionStartTime() == sessionDatetime);
     }
 
-    public List<SmokerSession> findSession(String dateTimeString) {
-
-
-/*
-    FIX THIS CODE
-        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        scanExpression.addExpressionAttributeNamesEntry("sessionDateTime", dateTimeString);
-        return mapper.scan(SmokerSession.class, scanExpression);
-*/
-        return listAllSessions(ddb)
-                .stream()
-                .filter(s -> s.getSessionDateTime().equals(dateTimeString))
-                .collect(Collectors.toList());
-
-    }
-
-    public SmokerState loadState() {
-        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        List<SmokerState> allStates = mapper.scan(SmokerState.class, scanExpression);
-        Optional<SmokerState> stateOptional = allStates.stream().filter(s -> s.getId() == 1).findFirst();
-        return stateOptional.orElseThrow(() -> new RuntimeException("State not found"));
+    public SmokerSession findSession(String dateTimeString) {
+        return findSession(session -> session.getSessionDateTime().equals(dateTimeString));
     }
 
     public List<String> listAllSessionIds() {
-        DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable("smokersessions");
-        ScanSpec scanSpec;
-        scanSpec = new ScanSpec();
-        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
-        List<String> result = new ArrayList<>();
-        for (Item item : items) {
-            result.add(item.getString("sessionDateTime"));
-        }
-        result.sort(String::compareTo);
-        return result;
+        ScanSpec scanSpec = new ScanSpec();
+        return getScanResult(scanSpec, smokersessionsTable, this::getSessionDateTime, String::compareTo);
+    }
+
+    public JsonSmokerState loadState() {
+        ScanSpec scanSpec = new ScanSpec();
+        return getScanResult(scanSpec, smokerstateTable, this::toSmokerState, JsonSmokerState::compareTo)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("State not found"));
     }
 
     //---------------------
-
     private AmazonDynamoDB getDynamoDb() {
         return AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
     }
 
+    private JsonSample toJsonSample(Item item) {
+        double bbqTemp = item.getDouble("bbqTemp");
+        double meatTemp = item.getDouble("meatTemp");
+        double fan = item.getDouble("fan");
+        double bbqSet = item.getDouble("bbqSet");
+        long time = item.getLong("time");
+        JsonSample sample = new JsonSample();
+        sample.setBt(bbqTemp);
+        sample.setBs(bbqSet);
+        sample.setMt(meatTemp);
+        sample.setF(fan);
+        sample.setT(time);
+        return sample;
+    }
 
-    private List<SmokerSession> listAllSessions(AmazonDynamoDB ddb) {
-        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        return mapper.scan(SmokerSession.class, scanExpression);
+    private JsonSmokerState toSmokerState(Item item) {
+        int id = item.getInt("id");
+        long currentSessionStartTime = item.getLong("currentSessionStartTime");
+        double bbqTempSet = item.getDouble("bbqTempSet");
+        JsonSmokerState smokerState = new JsonSmokerState();
+        smokerState.setId(id);
+        smokerState.setCurrentSessionStartTime(currentSessionStartTime);
+        smokerState.setBbqTempSet(bbqTempSet);
+        return smokerState;
+    }
+
+    private String getSessionDateTime(Item item) {
+        return item.getString("sessionDateTime");
+    }
+
+    public SmokerSession findSession(Predicate<? super SmokerSession> predicate) {
+        return listAllSessions(ddb)
+                .stream()
+                .filter(predicate)
+                .findFirst()
+                .orElse(null);
     }
 
     private ScanSpec getSamplesScanSpec(long sessionStartTime, boolean lowSamples) {
@@ -129,6 +120,24 @@ public class SmokerQueryRepository {
         }
         return scanSpec;
     }
+
+    private <T> List<T> getScanResult(ScanSpec scanSpec, Table table, Function<Item, T> toObject, Comparator<? super T> c) {
+        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
+        List<T> result = new ArrayList<>();
+        for (Item item : items) {
+            result.add(toObject.apply(item));
+        }
+        result.sort(c);
+        return result;
+    }
+
+    private List<SmokerSession> listAllSessions(AmazonDynamoDB ddb) {
+        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        return mapper.scan(SmokerSession.class, scanExpression);
+    }
+
+
 
 
 }

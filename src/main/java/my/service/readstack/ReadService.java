@@ -2,6 +2,7 @@ package my.service.readstack;
 
 import my.service.readstack.model.JsonSample;
 import my.service.readstack.model.JsonSmokerSession;
+import my.service.readstack.model.JsonSmokerState;
 import my.service.writestack.model.SmokerSession;
 import my.service.writestack.model.SmokerState;
 
@@ -25,18 +26,17 @@ public class ReadService {
 
     public JsonSmokerSession listSession(String session) {
         System.out.println("MyResource: session/" + session);
-        List<SmokerSession> sessions = smokerReadRepository.findSession(session);
-        if (sessions.isEmpty()) {
+        SmokerSession smokerSession = smokerReadRepository.findSession(session);
+        if (smokerSession==null) {
             return null;
         }
-        SmokerSession smokerSession = sessions.get(0);
         boolean lowSamples = smokerSession.getSamplesCount() > 360 * 6; // after 6 hour, use slower sample rate
         List<JsonSample> samples = smokerReadRepository.findSamples(smokerSession.getSessionStartTime(), lowSamples);
         return new JsonSmokerSession(smokerSession, samples);
     }
 
     public long getTemp() {
-        SmokerState smokerState = smokerReadRepository.loadState();
+        JsonSmokerState smokerState = smokerReadRepository.loadState();
         return Math.round(smokerState.getBbqTempSet());
     }
 

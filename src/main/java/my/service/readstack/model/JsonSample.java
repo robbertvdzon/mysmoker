@@ -24,4 +24,9 @@ public class JsonSample {
         f = sample.getFan();
         bs = sample.getBbqSet();
     }
+
+    public int compareTo(JsonSample otherJsonSample) {
+        return this.getT() < otherJsonSample.getT() ? -1 : 1;
+    }
+
 }
