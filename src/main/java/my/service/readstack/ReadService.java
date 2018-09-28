@@ -18,27 +18,22 @@ public class ReadService {
 
     public JsonSmokerSession lastsession() {
         System.out.println("MyResource: listSession");
-        SmokerSession lastSession = smokerReadRepository.findLastSession();
-        boolean lowSamples = lastSession.getSamplesCount() > 360 * 6; // after 6 hour, use slower sample rate
-        List<JsonSample> samples = smokerReadRepository.findSamples(lastSession.getSessionStartTime(), lowSamples);
-        return new JsonSmokerSession(lastSession, samples);
+        return smokerReadRepository.findLastSession(this::useLowSampleRate);
     }
 
     public JsonSmokerSession listSession(String session) {
         System.out.println("MyResource: session/" + session);
-        SmokerSession smokerSession = smokerReadRepository.findSession(session);
-        if (smokerSession==null) {
-            return null;
-        }
-        boolean lowSamples = smokerSession.getSamplesCount() > 360 * 6; // after 6 hour, use slower sample rate
-        List<JsonSample> samples = smokerReadRepository.findSamples(smokerSession.getSessionStartTime(), lowSamples);
-        return new JsonSmokerSession(smokerSession, samples);
+        return smokerReadRepository.findSession(session, this::useLowSampleRate);
     }
 
     public long getTemp() {
+        System.out.println("MyResource: getTemp");
         JsonSmokerState smokerState = smokerReadRepository.loadState();
         return Math.round(smokerState.getBbqTempSet());
     }
 
+    private boolean useLowSampleRate(Long sampleCount) {
+        return sampleCount > 360 * 6;
+    }
 
 }

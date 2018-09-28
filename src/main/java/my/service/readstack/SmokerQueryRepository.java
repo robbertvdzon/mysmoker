@@ -3,14 +3,12 @@ package my.service.readstack;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import my.service.readstack.model.JsonSample;
+import my.service.readstack.model.JsonSmokerSession;
 import my.service.readstack.model.JsonSmokerState;
-import my.service.writestack.model.SmokerSession;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,13 +35,14 @@ public class SmokerQueryRepository {
         return getScanResult(scanSpec, smokersamplesTable, this::toJsonSample, JsonSample::compareTo);
     }
 
-    public SmokerSession findLastSession() {
+    public JsonSmokerSession findLastSession(Function<Long, Boolean> useLowSamples) {
         long sessionDatetime = loadState().getCurrentSessionStartTime();
-        return findSession(session -> session.getSessionStartTime() == sessionDatetime);
+        JsonSmokerSession result = findSession(session -> session.getSessionStartTime() == sessionDatetime, useLowSamples);
+        return result;
     }
 
-    public SmokerSession findSession(String dateTimeString) {
-        return findSession(session -> session.getSessionDateTime().equals(dateTimeString));
+    public JsonSmokerSession findSession(String dateTimeString, Function<Long, Boolean> useLowSamples) {
+        return findSession(session -> session.getSessionDateTime().equals(dateTimeString), useLowSamples);
     }
 
     public List<String> listAllSessionIds() {
@@ -64,6 +63,11 @@ public class SmokerQueryRepository {
         return AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
     }
 
+    private List<JsonSmokerSession> listAllSessions(Function<Long, Boolean> useLowSamples) {
+        ScanSpec scanSpec = new ScanSpec();
+        return getScanResult(scanSpec, smokersessionsTable, s -> toJsonSmokerSessionWithoutSamples(s), JsonSmokerSession::compareTo);
+    }
+
     private JsonSample toJsonSample(Item item) {
         double bbqTemp = item.getDouble("bbqTemp");
         double meatTemp = item.getDouble("meatTemp");
@@ -77,6 +81,28 @@ public class SmokerQueryRepository {
         sample.setF(fan);
         sample.setT(time);
         return sample;
+    }
+
+    private JsonSmokerSession toJsonSmokerSessionWithoutSamples(Item item) {
+        String sessionDateTime = item.getString("sessionDateTime");
+        long lastSampleTime = item.getLong("lastSampleTime");
+        long sessionStartTime = item.getLong("sessionStartTime");
+        long samplesCount = item.getLong("samplesCount");
+        double lastBbqTemp = item.getDouble("lastBbqTemp");
+        double lastMeatTemp = item.getDouble("lastMeatTemp");
+        double lastFan = item.getDouble("lastFan");
+        double lastBbqSet = item.getDouble("lastBbqSet");
+
+        return JsonSmokerSession.builder()
+                .sessionDateTime(sessionDateTime)
+                .sessionStartTime(sessionStartTime)
+                .samplesCount(samplesCount)
+                .lastSampleTime(lastSampleTime)
+                .lastBbqTemp(lastBbqTemp)
+                .lastBbqSet(lastBbqSet)
+                .lastMeatTemp(lastMeatTemp)
+                .lastFan(lastFan)
+                .build();
     }
 
     private JsonSmokerState toSmokerState(Item item) {
@@ -94,12 +120,21 @@ public class SmokerQueryRepository {
         return item.getString("sessionDateTime");
     }
 
-    public SmokerSession findSession(Predicate<? super SmokerSession> predicate) {
-        return listAllSessions(ddb)
+    public JsonSmokerSession findSession(Predicate<? super JsonSmokerSession> predicate, Function<Long, Boolean> useLowSamples) {
+        return listAllSessions(useLowSamples)
                 .stream()
                 .filter(predicate)
                 .findFirst()
+                .map(s -> this.addSamples(s, useLowSamples))
                 .orElse(null);
+    }
+
+    private JsonSmokerSession addSamples(JsonSmokerSession session, Function<Long, Boolean> useLowSamples) {
+        long samplesCount = session.getSamplesCount();
+        long sessionStartTime = session.getSessionStartTime();
+        Boolean lowSamples = useLowSamples.apply(samplesCount);
+        List<JsonSample> samples = findSamples(sessionStartTime, lowSamples);
+        return session.toBuilder().samples(samples).build();
     }
 
     private ScanSpec getSamplesScanSpec(long sessionStartTime, boolean lowSamples) {
@@ -130,14 +165,4 @@ public class SmokerQueryRepository {
         result.sort(c);
         return result;
     }
-
-    private List<SmokerSession> listAllSessions(AmazonDynamoDB ddb) {
-        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        return mapper.scan(SmokerSession.class, scanExpression);
-    }
-
-
-
-
 }

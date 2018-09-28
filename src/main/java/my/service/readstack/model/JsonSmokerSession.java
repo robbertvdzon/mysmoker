@@ -1,6 +1,7 @@
 package my.service.readstack.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import my.service.writestack.model.SmokerSession;
@@ -11,6 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder(toBuilder = true)
 public class JsonSmokerSession {
     private String sessionDateTime;
     private long lastSampleTime = 0;
@@ -20,13 +22,12 @@ public class JsonSmokerSession {
     private double lastBbqSet = 0;
     private List<JsonSample> samples = new ArrayList<>();
 
-    public JsonSmokerSession(SmokerSession session, List<JsonSample> samples) {
-        sessionDateTime = session.getSessionDateTime();
-        lastBbqSet = session.getLastBbqSet();
-        lastBbqTemp = session.getLastBbqTemp();
-        lastMeatTemp = session.getLastMeatTemp();
-        lastFan = session.getLastFan();
-        lastSampleTime = session.getLastSampleTime();
-        this.samples = samples;
+    // ignore for json
+    private long sessionStartTime = 0;
+    private long samplesCount = 0;
+
+    public int compareTo(JsonSmokerSession otherSession) {
+        return getSessionDateTime().compareTo(otherSession.getSessionDateTime());
     }
+
 }

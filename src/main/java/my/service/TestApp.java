@@ -14,6 +14,6 @@ public class TestApp {
 //        writeService.add(1.1,1.2,1.3,1.4);
 //        writeService.add(1.1,1.2,1.3,1.4);
 //        writeService.setTemp(3.1);
-        System.out.println(readService.listsessions());
+        System.out.println(readService.lastsession());
     }
 }
