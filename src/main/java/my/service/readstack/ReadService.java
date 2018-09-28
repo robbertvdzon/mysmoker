@@ -1,10 +1,7 @@
 package my.service.readstack;
 
-import my.service.readstack.model.JsonSample;
 import my.service.readstack.model.JsonSmokerSession;
 import my.service.readstack.model.JsonSmokerState;
-import my.service.writestack.model.SmokerSession;
-import my.service.writestack.model.SmokerState;
 
 import java.util.List;
 

@@ -1,5 +1,6 @@
 package my.service.readstack.model;
 
+import com.amazonaws.services.dynamodbv2.document.Item;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,6 +28,21 @@ public class JsonSample {
 
     public int compareTo(JsonSample otherJsonSample) {
         return this.getT() < otherJsonSample.getT() ? -1 : 1;
+    }
+
+    public static JsonSample fromItem(Item item) {
+        double bbqTemp = item.getDouble("bbqTemp");
+        double meatTemp = item.getDouble("meatTemp");
+        double fan = item.getDouble("fan");
+        double bbqSet = item.getDouble("bbqSet");
+        long time = item.getLong("time");
+        JsonSample sample = new JsonSample();
+        sample.setBt(bbqTemp);
+        sample.setBs(bbqSet);
+        sample.setMt(meatTemp);
+        sample.setF(fan);
+        sample.setT(time);
+        return sample;
     }
 
 }

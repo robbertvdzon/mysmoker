@@ -32,7 +32,7 @@ public class SmokerQueryRepository {
 
     public List<JsonSample> findSamples(long sessionStartTime, boolean lowSamples) {
         ScanSpec scanSpec = getSamplesScanSpec(sessionStartTime, lowSamples);
-        return getScanResult(scanSpec, smokersamplesTable, this::toJsonSample, JsonSample::compareTo);
+        return getScanResult(scanSpec, smokersamplesTable, JsonSample::fromItem, JsonSample::compareTo);
     }
 
     public JsonSmokerSession findLastSession(Function<Long, Boolean> useLowSamples) {
@@ -47,12 +47,12 @@ public class SmokerQueryRepository {
 
     public List<String> listAllSessionIds() {
         ScanSpec scanSpec = new ScanSpec();
-        return getScanResult(scanSpec, smokersessionsTable, this::getSessionDateTime, String::compareTo);
+        return getScanResult(scanSpec, smokersessionsTable, JsonSmokerSession::getSessionDateTimeFromItem, String::compareTo);
     }
 
     public JsonSmokerState loadState() {
         ScanSpec scanSpec = new ScanSpec();
-        return getScanResult(scanSpec, smokerstateTable, this::toSmokerState, JsonSmokerState::compareTo)
+        return getScanResult(scanSpec, smokerstateTable, JsonSmokerState::fromItem, JsonSmokerState::compareTo)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("State not found"));
@@ -63,73 +63,20 @@ public class SmokerQueryRepository {
         return AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
     }
 
-    private List<JsonSmokerSession> listAllSessions(Function<Long, Boolean> useLowSamples) {
-        ScanSpec scanSpec = new ScanSpec();
-        return getScanResult(scanSpec, smokersessionsTable, s -> toJsonSmokerSessionWithoutSamples(s), JsonSmokerSession::compareTo);
-    }
-
-    private JsonSample toJsonSample(Item item) {
-        double bbqTemp = item.getDouble("bbqTemp");
-        double meatTemp = item.getDouble("meatTemp");
-        double fan = item.getDouble("fan");
-        double bbqSet = item.getDouble("bbqSet");
-        long time = item.getLong("time");
-        JsonSample sample = new JsonSample();
-        sample.setBt(bbqTemp);
-        sample.setBs(bbqSet);
-        sample.setMt(meatTemp);
-        sample.setF(fan);
-        sample.setT(time);
-        return sample;
-    }
-
-    private JsonSmokerSession toJsonSmokerSessionWithoutSamples(Item item) {
-        String sessionDateTime = item.getString("sessionDateTime");
-        long lastSampleTime = item.getLong("lastSampleTime");
-        long sessionStartTime = item.getLong("sessionStartTime");
-        long samplesCount = item.getLong("samplesCount");
-        double lastBbqTemp = item.getDouble("lastBbqTemp");
-        double lastMeatTemp = item.getDouble("lastMeatTemp");
-        double lastFan = item.getDouble("lastFan");
-        double lastBbqSet = item.getDouble("lastBbqSet");
-
-        return JsonSmokerSession.builder()
-                .sessionDateTime(sessionDateTime)
-                .sessionStartTime(sessionStartTime)
-                .samplesCount(samplesCount)
-                .lastSampleTime(lastSampleTime)
-                .lastBbqTemp(lastBbqTemp)
-                .lastBbqSet(lastBbqSet)
-                .lastMeatTemp(lastMeatTemp)
-                .lastFan(lastFan)
-                .build();
-    }
-
-    private JsonSmokerState toSmokerState(Item item) {
-        int id = item.getInt("id");
-        long currentSessionStartTime = item.getLong("currentSessionStartTime");
-        double bbqTempSet = item.getDouble("bbqTempSet");
-        JsonSmokerState smokerState = new JsonSmokerState();
-        smokerState.setId(id);
-        smokerState.setCurrentSessionStartTime(currentSessionStartTime);
-        smokerState.setBbqTempSet(bbqTempSet);
-        return smokerState;
-    }
-
-    private String getSessionDateTime(Item item) {
-        return item.getString("sessionDateTime");
+    private List<JsonSmokerSession> listAllSessionsWithoutSamples() {
+        return getScanResult(new ScanSpec(), smokersessionsTable, JsonSmokerSession::fromItemWithoutSamples, JsonSmokerSession::compareTo);
     }
 
     public JsonSmokerSession findSession(Predicate<? super JsonSmokerSession> predicate, Function<Long, Boolean> useLowSamples) {
-        return listAllSessions(useLowSamples)
+        return listAllSessionsWithoutSamples()
                 .stream()
                 .filter(predicate)
                 .findFirst()
-                .map(s -> this.addSamples(s, useLowSamples))
+                .map(s -> this.addSamplesToSession(s, useLowSamples))
                 .orElse(null);
     }
 
-    private JsonSmokerSession addSamples(JsonSmokerSession session, Function<Long, Boolean> useLowSamples) {
+    private JsonSmokerSession addSamplesToSession(JsonSmokerSession session, Function<Long, Boolean> useLowSamples) {
         long samplesCount = session.getSamplesCount();
         long sessionStartTime = session.getSessionStartTime();
         Boolean lowSamples = useLowSamples.apply(samplesCount);
@@ -138,22 +85,7 @@ public class SmokerQueryRepository {
     }
 
     private ScanSpec getSamplesScanSpec(long sessionStartTime, boolean lowSamples) {
-        ScanSpec scanSpec;
-        if (lowSamples) {
-            scanSpec = new ScanSpec()
-                    .withFilterExpression("sessionStartTime = :sessionStartTime AND newMinute = :newMinute")
-                    .withValueMap(new ValueMap()
-                            .withNumber(":sessionStartTime", sessionStartTime)
-                            .withNumber(":newMinute", 1)
-                    );
-        } else {
-            scanSpec = new ScanSpec()
-                    .withFilterExpression("sessionStartTime = :sessionStartTime")
-                    .withValueMap(new ValueMap()
-                            .withNumber(":sessionStartTime", sessionStartTime)
-                    );
-        }
-        return scanSpec;
+        return lowSamples ? getLowSamplesScanSpec(sessionStartTime): getHighSampleScanSpec(sessionStartTime);
     }
 
     private <T> List<T> getScanResult(ScanSpec scanSpec, Table table, Function<Item, T> toObject, Comparator<? super T> c) {
@@ -165,4 +97,22 @@ public class SmokerQueryRepository {
         result.sort(c);
         return result;
     }
+
+    private ScanSpec getHighSampleScanSpec(long sessionStartTime) {
+        return new ScanSpec()
+                .withFilterExpression("sessionStartTime = :sessionStartTime")
+                .withValueMap(new ValueMap()
+                        .withNumber(":sessionStartTime", sessionStartTime)
+                );
+    }
+
+    private ScanSpec getLowSamplesScanSpec(long sessionStartTime) {
+        return new ScanSpec()
+                .withFilterExpression("sessionStartTime = :sessionStartTime AND newMinute = :newMinute")
+                .withValueMap(new ValueMap()
+                        .withNumber(":sessionStartTime", sessionStartTime)
+                        .withNumber(":newMinute", 1)
+                );
+    }
+
 }

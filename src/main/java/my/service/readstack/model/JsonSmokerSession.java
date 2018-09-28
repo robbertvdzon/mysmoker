@@ -1,5 +1,6 @@
 package my.service.readstack.model;
 
+import com.amazonaws.services.dynamodbv2.document.Item;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,10 +22,35 @@ public class JsonSmokerSession {
     private double lastFan = 0;
     private double lastBbqSet = 0;
     private List<JsonSample> samples = new ArrayList<>();
-
-    // ignore for json
     private long sessionStartTime = 0;
     private long samplesCount = 0;
+
+    public static JsonSmokerSession fromItemWithoutSamples(Item item) {
+        String sessionDateTime = item.getString("sessionDateTime");
+        long lastSampleTime = item.getLong("lastSampleTime");
+        long sessionStartTime = item.getLong("sessionStartTime");
+        long samplesCount = item.getLong("samplesCount");
+        double lastBbqTemp = item.getDouble("lastBbqTemp");
+        double lastMeatTemp = item.getDouble("lastMeatTemp");
+        double lastFan = item.getDouble("lastFan");
+        double lastBbqSet = item.getDouble("lastBbqSet");
+
+        return JsonSmokerSession.builder()
+                .sessionDateTime(sessionDateTime)
+                .sessionStartTime(sessionStartTime)
+                .samplesCount(samplesCount)
+                .lastSampleTime(lastSampleTime)
+                .lastBbqTemp(lastBbqTemp)
+                .lastBbqSet(lastBbqSet)
+                .lastMeatTemp(lastMeatTemp)
+                .lastFan(lastFan)
+                .build();
+    }
+
+    public static String getSessionDateTimeFromItem(Item item) {
+        return item.getString("sessionDateTime");
+    }
+
 
     public int compareTo(JsonSmokerSession otherSession) {
         return getSessionDateTime().compareTo(otherSession.getSessionDateTime());
