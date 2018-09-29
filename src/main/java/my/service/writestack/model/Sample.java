@@ -5,8 +5,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-@DynamoDBTable(tableName = "smokersamples")
+import static my.service.common.Const.SMOKERSAMPLES_TABLENAME;
+@DynamoDBTable(tableName = SMOKERSAMPLES_TABLENAME)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

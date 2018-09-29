@@ -1,4 +1,4 @@
-package my.service.readstack;
+package my.service.readstack.storage;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -6,6 +6,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import my.service.common.storage.SmokerRepository;
 import my.service.readstack.model.JsonSample;
 import my.service.readstack.model.JsonSmokerSession;
 import my.service.readstack.model.JsonSmokerState;
@@ -16,10 +17,11 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class SmokerQueryRepository {
-    public static final String SMOKERSAMPLES_TABLENAME = "smokersamples";
-    public static final String SMOKERSESSIONS_TABLENAME = "smokersessions";
-    public static final String SMOKERSTATE_TABLENAME = "smokerstate";
+import static my.service.common.Const.SMOKERSAMPLES_TABLENAME;
+import static my.service.common.Const.SMOKERSESSIONS_TABLENAME;
+import static my.service.common.Const.SMOKERSTATE_TABLENAME;
+
+public class SmokerQueryRepository extends SmokerRepository {
     private Table smokersamplesTable;
     private Table smokersessionsTable;
     private Table smokerstateTable;
@@ -55,10 +57,7 @@ public class SmokerQueryRepository {
      Private functions
      */
     private void initializeTables() {
-        AmazonDynamoDB ddb = AmazonDynamoDBClientBuilder
-                .standard()
-                .withRegion(Regions.EU_CENTRAL_1)
-                .build();
+        AmazonDynamoDB ddb = getDynamoDb();
         DynamoDB dynamoDB = new DynamoDB(ddb);
         smokersamplesTable = dynamoDB.getTable(SMOKERSAMPLES_TABLENAME);
         smokersessionsTable = dynamoDB.getTable(SMOKERSESSIONS_TABLENAME);
@@ -93,16 +92,6 @@ public class SmokerQueryRepository {
 
     private ScanSpec getSamplesScanSpec(long sessionId, boolean lowSamples) {
         return lowSamples ? getLowSamplesScanSpec(sessionId) : getHighSampleScanSpec(sessionId);
-    }
-
-    private <T> List<T> getScanResult(ScanSpec scanSpec, Table table, Function<Item, T> toObject, Comparator<? super T> c) {
-        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
-        List<T> result = new ArrayList<>();
-        for (Item item : items) {
-            result.add(toObject.apply(item));
-        }
-        result.sort(c);
-        return result;
     }
 
     private ScanSpec getHighSampleScanSpec(long sessionId) {

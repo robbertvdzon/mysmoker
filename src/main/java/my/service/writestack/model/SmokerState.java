@@ -6,8 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import static my.service.common.Const.SMOKERSTATE_TABLENAME;
 
-@DynamoDBTable(tableName = "smokerstate")
+@DynamoDBTable(tableName = SMOKERSTATE_TABLENAME)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

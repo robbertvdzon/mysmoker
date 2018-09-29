@@ -1,12 +1,9 @@
 package my.service.writestack;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
-import my.service.readstack.ReadService;
-import my.service.readstack.model.JsonSmokerSession;
 import my.service.writestack.model.Sample;
 import my.service.writestack.model.SmokerSession;
 import my.service.writestack.model.SmokerState;
+import my.service.writestack.storage.SmokerCommandRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -14,22 +11,18 @@ import java.util.Date;
 public class WriteService {
 
     SmokerCommandRepository smokerCommandRepository = new SmokerCommandRepository();
-    ReadService readService = new ReadService();
 
     public void removeSession(long sessionId) {
+        System.out.println("remove session "+sessionId);
         smokerCommandRepository.createTablewhenNeeded();
-        JsonSmokerSession jsonSmokerSession = readService.listSession(sessionId);
-        if (jsonSmokerSession == null) {
-            return;
-        }
-        smokerCommandRepository.removeSessionFromTable(sessionId);
-        smokerCommandRepository.removeSamplesFromTable(sessionId);
-    }
 
+        smokerCommandRepository.removeSession(sessionId);
+    }
 
     public void setTemp(double temp) {
         System.out.println("set temp " + temp);
         smokerCommandRepository.createTablewhenNeeded();
+
         SmokerState smokerState = smokerCommandRepository.loadState();
         smokerState.setBbqTempSet(temp);
         smokerCommandRepository.storeState(smokerState);
@@ -37,7 +30,6 @@ public class WriteService {
 
     public SmokerSession newsession() {
         System.out.println("MyResource: newSession");
-
         smokerCommandRepository.createTablewhenNeeded();
 
         long currentTimeMillis = System.currentTimeMillis();
@@ -58,37 +50,37 @@ public class WriteService {
             double fan
     ) {
         System.out.println("MyResource: add");
-            smokerCommandRepository.createTablewhenNeeded();
+        smokerCommandRepository.createTablewhenNeeded();
 
-            long currentTimeMillis = System.currentTimeMillis();
-            SmokerSession smokerSession = findOrCreateSession(currentTimeMillis);
-            long timeDiffSinceLastMinute = currentTimeMillis - smokerSession.getLastMinuteSampleTime();
-            boolean newMinute = timeDiffSinceLastMinute > 60 * 1000;
+        long currentTimeMillis = System.currentTimeMillis();
+        SmokerSession smokerSession = findOrCreateSession(currentTimeMillis);
+        long timeDiffSinceLastMinute = currentTimeMillis - smokerSession.getLastMinuteSampleTime();
+        boolean newMinute = timeDiffSinceLastMinute > 60 * 1000;
 
-            Sample sample = new Sample();
-            sample.setBbqTemp(bbqtemp);
-            sample.setBbqSet(bbqtempset);
-            sample.setFan(fan);
-            sample.setMeatTemp(meattemp);
-            sample.setNewMinute(newMinute);
-            sample.setSessionId(smokerSession.getId());
-            sample.setTime(currentTimeMillis);
+        Sample sample = new Sample();
+        sample.setBbqTemp(bbqtemp);
+        sample.setBbqSet(bbqtempset);
+        sample.setFan(fan);
+        sample.setMeatTemp(meattemp);
+        sample.setNewMinute(newMinute);
+        sample.setSessionId(smokerSession.getId());
+        sample.setTime(currentTimeMillis);
 
-            if (newMinute) {
-                smokerSession.setLastMinuteSampleTime(currentTimeMillis);
-            }
-            smokerSession.setLastBbqSet(sample.getBbqSet());
-            smokerSession.setLastBbqTemp(sample.getBbqTemp());
-            smokerSession.setLastMeatTemp(sample.getMeatTemp());
-            smokerSession.setLastFan(sample.getFan());
-            smokerSession.setLastSampleTime(currentTimeMillis);
-            smokerSession.setSamplesCount(smokerSession.getSamplesCount() + 1);
+        if (newMinute) {
+            smokerSession.setLastMinuteSampleTime(currentTimeMillis);
+        }
+        smokerSession.setLastBbqSet(sample.getBbqSet());
+        smokerSession.setLastBbqTemp(sample.getBbqTemp());
+        smokerSession.setLastMeatTemp(sample.getMeatTemp());
+        smokerSession.setLastFan(sample.getFan());
+        smokerSession.setLastSampleTime(currentTimeMillis);
+        smokerSession.setSamplesCount(smokerSession.getSamplesCount() + 1);
 
-            smokerCommandRepository.storeSession(smokerSession);
-            smokerCommandRepository.storeSample(sample);
+        smokerCommandRepository.storeSession(smokerSession);
+        smokerCommandRepository.storeSample(sample);
     }
 
-    public SmokerSession findOrCreateSession(long currentTimestamp) {
+    private SmokerSession findOrCreateSession(long currentTimestamp) {
         long timeout = currentTimestamp - 1000 * 60 * 60;// minus one hour
         SmokerState smokerState = smokerCommandRepository.loadState();
         SmokerSession lastSession = smokerCommandRepository.loadSession(smokerState.getCurrentSessionId());
@@ -101,7 +93,7 @@ public class WriteService {
         return newSmokerSession;
     }
 
-    private SmokerSession createNewSmokerSession(long currentTimestamp){
+    private SmokerSession createNewSmokerSession(long currentTimestamp) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String currentDateString = simpleDateFormat.format(new Date(currentTimestamp));
         return new SmokerSession(currentDateString, currentTimestamp, currentTimestamp);

@@ -2,6 +2,7 @@ package my.service.readstack;
 
 import my.service.readstack.model.JsonSmokerSession;
 import my.service.readstack.model.JsonSmokerState;
+import my.service.readstack.storage.SmokerQueryRepository;
 
 import java.util.List;
 

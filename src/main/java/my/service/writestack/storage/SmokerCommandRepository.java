@@ -1,4 +1,4 @@
-package my.service.writestack;
+package my.service.writestack.storage;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -10,28 +10,31 @@ import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
+import my.service.common.storage.SmokerRepository;
 import my.service.writestack.model.Sample;
 import my.service.writestack.model.SmokerSession;
 import my.service.writestack.model.SmokerState;
 
 import java.util.*;
 
-public class SmokerCommandRepository {
+import static my.service.common.Const.SMOKERSAMPLES_TABLENAME;
+import static my.service.common.Const.SMOKERSESSIONS_TABLENAME;
+import static my.service.common.Const.SMOKERSTATE_TABLENAME;
+
+public class SmokerCommandRepository extends SmokerRepository {
 
     private final AmazonDynamoDB ddb = getDynamoDb();
 
     public void createTablewhenNeeded() {
-        createTable(ddb, "smokersessions", "id", "N");
-        createTable(ddb, "smokersamples", "time", "N");
-        createTable(ddb, "smokerstate", "id", "N");
+        createTable(ddb, SMOKERSESSIONS_TABLENAME, "id", "N");
+        createTable(ddb, SMOKERSAMPLES_TABLENAME, "time", "N");
+        createTable(ddb, SMOKERSTATE_TABLENAME, "id", "N");
     }
-
 
     public void storeSession(SmokerSession smokerSession) {
         DynamoDBMapper mapper = new DynamoDBMapper(ddb);
         mapper.save(smokerSession);
         System.out.println("session stored:" + smokerSession);
-
     }
 
     public void storeSample(Sample sample) {
@@ -80,13 +83,14 @@ public class SmokerCommandRepository {
         return allSessions.stream().findFirst().orElse(null);
     }
 
+    public void removeSession(long sessionId) {
+        removeSessionFromTable(sessionId);
+        removeSamplesFromTable(sessionId);
+    }
+
     /*
     private functions
      */
-
-    private AmazonDynamoDB getDynamoDb() {
-        return AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
-    }
 
     private SmokerState createNewState() {
         SmokerState smokerState = SmokerState.builder().id(1).build();
@@ -94,43 +98,19 @@ public class SmokerCommandRepository {
         return smokerState;
     }
 
-    private void createTable(AmazonDynamoDB dynamoDB, String tablename, String keyName, String keyType) {
-        ListTablesResult listTablesResult = dynamoDB.listTables();
-        boolean tableFound = listTablesResult.getTableNames().stream().anyMatch(name -> name.equals(tablename));
-        if (!tableFound) {
-            ArrayList<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
-            keySchema.add(new KeySchemaElement().withAttributeName(keyName).withKeyType(KeyType.HASH)); // Partition
-
-            ArrayList<AttributeDefinition> attributeDefinitions = new ArrayList<AttributeDefinition>();
-            attributeDefinitions
-                    .add(new AttributeDefinition().withAttributeName(keyName).withAttributeType(keyType));
-
-            CreateTableRequest createTableRequest = new CreateTableRequest()
-                    .withTableName(tablename)
-                    .withKeySchema(keySchema)
-                    .withAttributeDefinitions(attributeDefinitions)
-                    .withProvisionedThroughput(new ProvisionedThroughput()
-                            .withReadCapacityUnits(5l)
-                            .withWriteCapacityUnits(5l)
-                    );
-            dynamoDB.createTable(createTableRequest);
-        }
-    }
-
-    public void removeSamplesFromTable(long sessionId) {
+    private void removeSamplesFromTable(long sessionId) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable("smokersamples");
+        Table table = dynamoDB.getTable(SMOKERSAMPLES_TABLENAME);
         findSamplesDates(ddb, sessionId).forEach(l -> {
             DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
                     .withPrimaryKey(new PrimaryKey("time", l));
             table.deleteItem(deleteItemSpec);
-
         });
     }
 
     private List<Long> findSamplesDates(AmazonDynamoDB ddb, long sessionId) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable("smokersamples");
+        Table table = dynamoDB.getTable(SMOKERSAMPLES_TABLENAME);
         ScanSpec scanSpec = new ScanSpec()
                 .withFilterExpression("sessionId = :id")
                 .withValueMap(new ValueMap()
@@ -145,13 +125,12 @@ public class SmokerCommandRepository {
         return result;
     }
 
-    public void removeSessionFromTable(long sessionId) {
+    private void removeSessionFromTable(long sessionId) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable("smokersessions");
+        Table table = dynamoDB.getTable(SMOKERSESSIONS_TABLENAME);
         DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
                 .withPrimaryKey(new PrimaryKey("id", sessionId));
         table.deleteItem(deleteItemSpec);
     }
-
 
 }

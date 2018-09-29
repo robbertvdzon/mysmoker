@@ -1,11 +1,8 @@
 package my.service;
 
 import my.service.readstack.ReadService;
-import my.service.writestack.SmokerCommandRepository;
+import my.service.writestack.storage.SmokerCommandRepository;
 import my.service.writestack.WriteService;
-
-import javax.ws.rs.core.Response;
-import java.util.List;
 
 public class TestApp {
     private static WriteService writeService = new WriteService();
