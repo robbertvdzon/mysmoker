@@ -2,28 +2,30 @@ package my.service.writestack;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
+import my.service.readstack.ReadService;
+import my.service.readstack.model.JsonSmokerSession;
 import my.service.writestack.model.Sample;
 import my.service.writestack.model.SmokerSession;
 import my.service.writestack.model.SmokerState;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 public class WriteService {
 
     SmokerCommandRepository smokerCommandRepository = new SmokerCommandRepository();
+    ReadService readService = new ReadService();
 
     public void removeSession(String sessionId) {
         smokerCommandRepository.createTablewhenNeeded();
-        List<SmokerSession> sessions = smokerCommandRepository.findSession(sessionId);
-        if (sessions.isEmpty()) {
+        JsonSmokerSession jsonSmokerSession = readService.listSession(sessionId);
+        if (jsonSmokerSession == null) {
             return;
         }
-        SmokerSession smokerSession = sessions.get(0);
         smokerCommandRepository.removeSessionFromTable(sessionId);
-        smokerCommandRepository.removeSamplesFromTable(smokerSession.getSessionStartTime());
+        smokerCommandRepository.removeSamplesFromTable(jsonSmokerSession.getSessionStartTime());
     }
+
 
     public void setTemp(double temp) {
         System.out.println("set temp " + temp);
@@ -62,7 +64,7 @@ public class WriteService {
             smokerCommandRepository.createTablewhenNeeded();
 
             long currentTimeMillis = System.currentTimeMillis();
-            SmokerSession smokerSession = smokerCommandRepository.findOrCreateSession(currentTimeMillis);
+            SmokerSession smokerSession = findOrCreateSession(currentTimeMillis);
             long timeDiffSinceLastMinute = currentTimeMillis - smokerSession.getLastMinuteSampleTime();
             boolean newMinute = timeDiffSinceLastMinute > 60 * 1000;
 
@@ -100,6 +102,20 @@ public class WriteService {
             t.printStackTrace();
             System.out.println(t);
         }
+    }
+
+    public SmokerSession findOrCreateSession(long currentTimestamp) {
+        long timeout = currentTimestamp - 1000 * 60 * 60;// minus one hour
+        SmokerState smokerState = smokerCommandRepository.loadState();
+        SmokerSession lastSession = smokerCommandRepository.loadSession(smokerState.getCurrentSessionStartTime());
+        if (lastSession != null && lastSession.getLastSampleTime() > timeout) {
+            return lastSession;
+        }
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+        String currentDateString = simpleDateFormat.format(new Date(currentTimestamp));
+        smokerState.setCurrentSessionStartTime(currentTimestamp);
+        smokerCommandRepository.storeState(smokerState);
+        return new SmokerSession(currentDateString, currentTimestamp);
     }
 
 

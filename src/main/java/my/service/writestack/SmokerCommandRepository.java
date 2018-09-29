@@ -14,9 +14,7 @@ import my.service.writestack.model.Sample;
 import my.service.writestack.model.SmokerSession;
 import my.service.writestack.model.SmokerState;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SmokerCommandRepository {
 
@@ -48,40 +46,46 @@ public class SmokerCommandRepository {
 
     public SmokerState loadState() {
         DynamoDBMapper mapper = new DynamoDBMapper(ddb);
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+
+        Map<String, String> attributeNames = new HashMap<String, String>();
+        attributeNames.put("#id", "id");
+
+        Map<String, AttributeValue> attributeValues = new HashMap<String, AttributeValue>();
+        attributeValues.put(":id", new AttributeValue().withN("1"));
+
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
+                .withFilterExpression("#id = :id")
+                .withExpressionAttributeNames(attributeNames)
+                .withExpressionAttributeValues(attributeValues);
+
         List<SmokerState> allStates = mapper.scan(SmokerState.class, scanExpression);
-        Optional<SmokerState> stateOptional = allStates.stream().filter(s -> s.getId() == 1).findFirst();
-
-        return stateOptional.orElseGet(() -> createNewState());
+        return allStates.stream().findFirst().orElseGet(() -> createNewState());
     }
 
-    public SmokerSession findOrCreateSession(long currentTimestamp) {
-        long timeout = currentTimestamp - 1000 * 60 * 60;// minus one hour
-        SmokerState smokerState = loadState();
-        SmokerSession lastSession = findSession(smokerState.getCurrentSessionStartTime());
-        if (lastSession != null && lastSession.getLastSampleTime() > timeout) {
-            return lastSession;
-        }
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
-        String currentDateString = simpleDateFormat.format(new Date(currentTimestamp));
-        smokerState.setCurrentSessionStartTime(currentTimestamp);
-        storeState(smokerState);
-        return new SmokerSession(currentDateString, currentTimestamp);
-    }
-
-    public List<SmokerSession> findSession(String dateTimeString) {
-/*
-    FIX THIS CODE
+    public SmokerSession loadSession(long sessionStartTime) {
         DynamoDBMapper mapper = new DynamoDBMapper(ddb);
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        scanExpression.addExpressionAttributeNamesEntry("sessionDateTime", dateTimeString);
-        return mapper.scan(SmokerSession.class, scanExpression);
-*/
-        return listAllSessions()
-                .stream()
-                .filter(s -> s.getSessionDateTime().equals(dateTimeString))
-                .collect(Collectors.toList());
 
+        Map<String, String> attributeNames = new HashMap<String, String>();
+        attributeNames.put("#sessionStartTime", "sessionStartTime");
+
+        Map<String, AttributeValue> attributeValues = new HashMap<String, AttributeValue>();
+        attributeValues.put(":dateTime", new AttributeValue().withN("" + sessionStartTime));
+
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
+                .withFilterExpression("#sessionStartTime = :dateTime")
+                .withExpressionAttributeNames(attributeNames)
+                .withExpressionAttributeValues(attributeValues);
+
+        List<SmokerSession> allSessions = mapper.scan(SmokerSession.class, scanExpression);
+        return allSessions.stream().findFirst().orElse(null);
+    }
+
+    /*
+    private functions
+     */
+
+    private AmazonDynamoDB getDynamoDb() {
+        return AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
     }
 
     private SmokerState createNewState() {
@@ -89,24 +93,6 @@ public class SmokerCommandRepository {
         storeState(smokerState);
         return smokerState;
     }
-
-    private AmazonDynamoDB getDynamoDb() {
-        return AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
-    }
-
-
-    private SmokerSession findSession(long sessionStartTime) {
-        List<SmokerSession> allSessions = listAllSessions();
-        Optional<SmokerSession> session = allSessions.stream().filter(s -> s.getSessionStartTime() == sessionStartTime).findFirst();
-        return session.orElse(null);
-    }
-
-    private List<SmokerSession> listAllSessions() {
-        DynamoDBMapper mapper = new DynamoDBMapper(ddb);
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        return mapper.scan(SmokerSession.class, scanExpression);
-    }
-
 
     private void createTable(AmazonDynamoDB dynamoDB, String tablename, String keyName, String keyType) {
         ListTablesResult listTablesResult = dynamoDB.listTables();
@@ -134,9 +120,7 @@ public class SmokerCommandRepository {
     public void removeSamplesFromTable(long sessionStartTime) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
         Table table = dynamoDB.getTable("smokersamples");
-        System.out.println("delete all samples from session " + sessionStartTime);
         findSamplesDates(ddb, sessionStartTime).forEach(l -> {
-            System.out.println("delete all samples with time " + l);
             DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
                     .withPrimaryKey(new PrimaryKey("time", l));
             table.deleteItem(deleteItemSpec);
@@ -161,9 +145,7 @@ public class SmokerCommandRepository {
             result.add(time);
         }
         return result;
-
     }
-
 
     public void removeSessionFromTable(String sessionId) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
