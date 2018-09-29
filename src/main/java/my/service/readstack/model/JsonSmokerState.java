@@ -16,17 +16,17 @@ import lombok.NoArgsConstructor;
 public class JsonSmokerState {
     @DynamoDBHashKey
     private int id = 1;
-    private long currentSessionStartTime = 0;
+    private long currentSessionId = 0;
     private double bbqTempSet = 0;
 
 
     public static JsonSmokerState fromItem(Item item) {
         int id = item.getInt("id");
-        long currentSessionStartTime = item.getLong("currentSessionStartTime");
+        long currentSessionId = item.getLong("currentSessionId");
         double bbqTempSet = item.getDouble("bbqTempSet");
         return JsonSmokerState.builder()
                 .id(id)
-                .currentSessionStartTime(currentSessionStartTime)
+                .currentSessionId(currentSessionId)
                 .bbqTempSet(bbqTempSet)
                 .build();
     }

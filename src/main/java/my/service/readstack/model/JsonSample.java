@@ -20,7 +20,7 @@ public class JsonSample {
     private double bs = 0;
 
     public JsonSample(Sample sample) {
-        s = sample.getSessionStartTime();
+        s = sample.getSessionId();
         t = sample.getTime();
         bt = sample.getBbqTemp();
         mt = sample.getMeatTemp();

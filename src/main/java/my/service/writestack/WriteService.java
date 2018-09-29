@@ -16,14 +16,14 @@ public class WriteService {
     SmokerCommandRepository smokerCommandRepository = new SmokerCommandRepository();
     ReadService readService = new ReadService();
 
-    public void removeSession(String sessionId) {
+    public void removeSession(long sessionId) {
         smokerCommandRepository.createTablewhenNeeded();
         JsonSmokerSession jsonSmokerSession = readService.listSession(sessionId);
         if (jsonSmokerSession == null) {
             return;
         }
         smokerCommandRepository.removeSessionFromTable(sessionId);
-        smokerCommandRepository.removeSamplesFromTable(jsonSmokerSession.getSessionStartTime());
+        smokerCommandRepository.removeSamplesFromTable(sessionId);
     }
 
 
@@ -41,14 +41,12 @@ public class WriteService {
         smokerCommandRepository.createTablewhenNeeded();
 
         long currentTimeMillis = System.currentTimeMillis();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
-        String currentDateString = simpleDateFormat.format(new Date(currentTimeMillis));
-        SmokerSession smokerSession = new SmokerSession(currentDateString, currentTimeMillis);
+        SmokerSession smokerSession = createNewSmokerSession(currentTimeMillis);
         smokerSession.setLastSampleTime(currentTimeMillis);
         smokerCommandRepository.storeSession(smokerSession);
 
         SmokerState smokerState = smokerCommandRepository.loadState();
-        smokerState.setCurrentSessionStartTime(smokerSession.getSessionStartTime());
+        smokerState.setCurrentSessionId(smokerSession.getId());
         smokerCommandRepository.storeState(smokerState);
         return smokerSession;
     }
@@ -60,7 +58,6 @@ public class WriteService {
             double fan
     ) {
         System.out.println("MyResource: add");
-        try {
             smokerCommandRepository.createTablewhenNeeded();
 
             long currentTimeMillis = System.currentTimeMillis();
@@ -74,7 +71,7 @@ public class WriteService {
             sample.setFan(fan);
             sample.setMeatTemp(meattemp);
             sample.setNewMinute(newMinute);
-            sample.setSessionStartTime(smokerSession.getSessionStartTime());
+            sample.setSessionId(smokerSession.getId());
             sample.setTime(currentTimeMillis);
 
             if (newMinute) {
@@ -89,33 +86,25 @@ public class WriteService {
 
             smokerCommandRepository.storeSession(smokerSession);
             smokerCommandRepository.storeSample(sample);
-        } catch (ResourceNotFoundException e) {
-            e.printStackTrace();
-            System.err.format("Error: The table can't be found.\n");
-            System.err.println("Be sure that it exists");
-            System.exit(1);
-        } catch (AmazonServiceException e) {
-            e.printStackTrace();
-            System.err.println(e.getMessage());
-            System.exit(1);
-        } catch (Throwable t) {
-            t.printStackTrace();
-            System.out.println(t);
-        }
     }
 
     public SmokerSession findOrCreateSession(long currentTimestamp) {
         long timeout = currentTimestamp - 1000 * 60 * 60;// minus one hour
         SmokerState smokerState = smokerCommandRepository.loadState();
-        SmokerSession lastSession = smokerCommandRepository.loadSession(smokerState.getCurrentSessionStartTime());
+        SmokerSession lastSession = smokerCommandRepository.loadSession(smokerState.getCurrentSessionId());
         if (lastSession != null && lastSession.getLastSampleTime() > timeout) {
             return lastSession;
         }
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
-        String currentDateString = simpleDateFormat.format(new Date(currentTimestamp));
-        smokerState.setCurrentSessionStartTime(currentTimestamp);
+        SmokerSession newSmokerSession = createNewSmokerSession(currentTimestamp);
+        smokerState.setCurrentSessionId(newSmokerSession.getId());
         smokerCommandRepository.storeState(smokerState);
-        return new SmokerSession(currentDateString, currentTimestamp);
+        return newSmokerSession;
+    }
+
+    private SmokerSession createNewSmokerSession(long currentTimestamp){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String currentDateString = simpleDateFormat.format(new Date(currentTimestamp));
+        return new SmokerSession(currentDateString, currentTimestamp, currentTimestamp);
     }
 
 

@@ -9,8 +9,8 @@ public class ReadService {
 
     private SmokerQueryRepository smokerReadRepository = new SmokerQueryRepository();
 
-    public List<String> listsessions() {
-        return smokerReadRepository.listAllSessionIds();
+    public List<JsonSmokerSession> listsessions() {
+        return smokerReadRepository.listAllSessions();
     }
 
     public JsonSmokerSession lastsession() {
@@ -18,9 +18,9 @@ public class ReadService {
         return smokerReadRepository.findLastSession(this::useLowSampleRate);
     }
 
-    public JsonSmokerSession listSession(String session) {
-        System.out.println("MyResource: session/" + session);
-        return smokerReadRepository.findSession(session, this::useLowSampleRate);
+    public JsonSmokerSession listSession(long sessionId) {
+        System.out.println("MyResource: session/" + sessionId);
+        return smokerReadRepository.findSession(sessionId, this::useLowSampleRate);
     }
 
     public long getTemp() {

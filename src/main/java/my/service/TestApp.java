@@ -16,9 +16,10 @@ public class TestApp {
 //        writeService.add(1.1,1.2,1.3,1.4);
 //        writeService.add(1.1,1.2,1.3,1.4);
 //        writeService.setTemp(3.1);
+//        System.out.println(readService.lastsession());
 //        System.out.println(readService.listsessions());
 //        System.out.println(smokerCommandRepository.loadState());
-        writeService.removeSession("2018-09-23_10:42:30");
+        writeService.removeSession(1538224970903l);
 
 
     }

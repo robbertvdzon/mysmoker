@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class Sample {
     @DynamoDBHashKey
     private long time = 0;
-    private long sessionStartTime;
+    private long sessionId;
     private double bbqTemp = 0;
     private double meatTemp = 0;
     private double fan = 0;

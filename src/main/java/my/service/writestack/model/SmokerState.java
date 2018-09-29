@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class SmokerState {
     @DynamoDBHashKey
     private int id = 1;
-    private long currentSessionStartTime = 0;
+    private long currentSessionId = 0;
     private double bbqTempSet = 0;
 
 }

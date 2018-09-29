@@ -28,7 +28,7 @@ public class MyResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.WILDCARD)
     public Response listsessions() {
-        List<String> sessionStrings = readService.listsessions();
+        List<JsonSmokerSession> sessionStrings = readService.listsessions();
         return buildResponse(200, sessionStrings);
     }
 
@@ -51,11 +51,11 @@ public class MyResource {
     }
 
     @GET
-    @Path("/session/{session}")
+    @Path("/session/{sessionId}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.WILDCARD)
-    public Response listSession(@PathParam("session") String session) {
-        JsonSmokerSession jsonSmokerSession = readService.listSession(session);
+    public Response listSession(@PathParam("sessionId") long sessionId) {
+        JsonSmokerSession jsonSmokerSession = readService.listSession(sessionId);
         int statusCode = jsonSmokerSession == null ? 404 : 200;
         return buildResponse(statusCode, jsonSmokerSession);
     }
@@ -75,11 +75,11 @@ public class MyResource {
     }
 
     @GET
-    @Path("/removesession/{session}")
+    @Path("/removesession/{sessionId}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.WILDCARD)
-    public Response removeSession(@PathParam("session") String session) {
-        writeService.removeSession(session);
+    public Response removeSession(@PathParam("sessionId") long sessionId) {
+        writeService.removeSession(sessionId);
         return buildResponse(200, null);
     }
 

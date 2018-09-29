@@ -14,20 +14,22 @@ import java.util.List;
 @NoArgsConstructor
 @Builder(toBuilder = true)
 public class JsonSmokerSession {
+    private long id = 0;
     private String sessionDateTime;
+    private long sessionStartTime = 0;
     private long lastSampleTime = 0;
+    private long samplesCount = 0;
     private double lastBbqTemp = 0;
     private double lastMeatTemp = 0;
     private double lastFan = 0;
     private double lastBbqSet = 0;
     private List<JsonSample> samples = new ArrayList<>();
-    private long sessionStartTime = 0;
-    private long samplesCount = 0;
 
     public static JsonSmokerSession fromItemWithoutSamples(Item item) {
         String sessionDateTime = item.getString("sessionDateTime");
         long lastSampleTime = item.getLong("lastSampleTime");
         long sessionStartTime = item.getLong("sessionStartTime");
+        long id = item.getLong("id");
         long samplesCount = item.getLong("samplesCount");
         double lastBbqTemp = item.getDouble("lastBbqTemp");
         double lastMeatTemp = item.getDouble("lastMeatTemp");
@@ -37,6 +39,7 @@ public class JsonSmokerSession {
         return JsonSmokerSession.builder()
                 .sessionDateTime(sessionDateTime)
                 .sessionStartTime(sessionStartTime)
+                .id(id)
                 .samplesCount(samplesCount)
                 .lastSampleTime(lastSampleTime)
                 .lastBbqTemp(lastBbqTemp)

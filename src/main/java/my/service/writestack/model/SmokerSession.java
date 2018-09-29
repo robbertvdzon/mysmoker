@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SmokerSession {
     @DynamoDBHashKey
+    private long id = 0;
     private String sessionDateTime;
     private long sessionStartTime = 0;
     private long lastSampleTime = 0;
@@ -23,9 +24,10 @@ public class SmokerSession {
     private double lastBbqSet = 0;
 
 
-    public SmokerSession(String sessionDateTime, long sessionStartTime) {
+    public SmokerSession(String sessionDateTime, long sessionStartTime, long id) {
         this.sessionDateTime = sessionDateTime;
         this.sessionStartTime = sessionStartTime;
+        this.id= id;
     }
 
 }

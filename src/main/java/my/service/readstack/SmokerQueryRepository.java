@@ -29,18 +29,18 @@ public class SmokerQueryRepository {
     }
 
     public JsonSmokerSession findLastSession(Function<Long, Boolean> useLowSamples) {
-        long sessionDatetime = loadState().getCurrentSessionStartTime();
-        JsonSmokerSession result = findSession(session -> session.getSessionStartTime() == sessionDatetime, useLowSamples);
+        long sessionId = loadState().getCurrentSessionId();
+        JsonSmokerSession result = findSession(session -> session.getId() == sessionId, useLowSamples);
         return result;
     }
 
-    public JsonSmokerSession findSession(String dateTimeString, Function<Long, Boolean> useLowSamples) {
-        return findSession(session -> session.getSessionDateTime().equals(dateTimeString), useLowSamples);
+    public JsonSmokerSession findSession(Long sessionId, Function<Long, Boolean> useLowSamples) {
+        return findSession(session -> session.getId()==sessionId, useLowSamples);
     }
 
-    public List<String> listAllSessionIds() {
+    public List<JsonSmokerSession> listAllSessions() {
         ScanSpec scanSpec = new ScanSpec();
-        return getScanResult(scanSpec, smokersessionsTable, JsonSmokerSession::getSessionDateTimeFromItem, String::compareTo);
+        return getScanResult(scanSpec, smokersessionsTable, JsonSmokerSession::fromItemWithoutSamples,  JsonSmokerSession::compareTo);
     }
 
     public JsonSmokerState loadState() {
@@ -80,19 +80,19 @@ public class SmokerQueryRepository {
 
     private JsonSmokerSession addSamplesToSession(JsonSmokerSession session, Function<Long, Boolean> useLowSamples) {
         long samplesCount = session.getSamplesCount();
-        long sessionStartTime = session.getSessionStartTime();
+        long sessionId = session.getId();
         Boolean lowSamples = useLowSamples.apply(samplesCount);
-        List<JsonSample> samples = findSamples(sessionStartTime, lowSamples);
+        List<JsonSample> samples = findSamples(sessionId, lowSamples);
         return session.toBuilder().samples(samples).build();
     }
 
-    private List<JsonSample> findSamples(long sessionStartTime, boolean lowSamples) {
-        ScanSpec scanSpec = getSamplesScanSpec(sessionStartTime, lowSamples);
+    private List<JsonSample> findSamples(long sessionId, boolean lowSamples) {
+        ScanSpec scanSpec = getSamplesScanSpec(sessionId, lowSamples);
         return getScanResult(scanSpec, smokersamplesTable, JsonSample::fromItem, JsonSample::compareTo);
     }
 
-    private ScanSpec getSamplesScanSpec(long sessionStartTime, boolean lowSamples) {
-        return lowSamples ? getLowSamplesScanSpec(sessionStartTime) : getHighSampleScanSpec(sessionStartTime);
+    private ScanSpec getSamplesScanSpec(long sessionId, boolean lowSamples) {
+        return lowSamples ? getLowSamplesScanSpec(sessionId) : getHighSampleScanSpec(sessionId);
     }
 
     private <T> List<T> getScanResult(ScanSpec scanSpec, Table table, Function<Item, T> toObject, Comparator<? super T> c) {
@@ -105,19 +105,19 @@ public class SmokerQueryRepository {
         return result;
     }
 
-    private ScanSpec getHighSampleScanSpec(long sessionStartTime) {
+    private ScanSpec getHighSampleScanSpec(long sessionId) {
         return new ScanSpec()
-                .withFilterExpression("sessionStartTime = :sessionStartTime")
+                .withFilterExpression("sessionId = :id")
                 .withValueMap(new ValueMap()
-                        .withNumber(":sessionStartTime", sessionStartTime)
+                        .withNumber(":id", sessionId)
                 );
     }
 
-    private ScanSpec getLowSamplesScanSpec(long sessionStartTime) {
+    private ScanSpec getLowSamplesScanSpec(long sessionId) {
         return new ScanSpec()
-                .withFilterExpression("sessionStartTime = :sessionStartTime AND newMinute = :newMinute")
+                .withFilterExpression("sessionId = :id AND newMinute = :newMinute")
                 .withValueMap(new ValueMap()
-                        .withNumber(":sessionStartTime", sessionStartTime)
+                        .withNumber(":id", sessionId)
                         .withNumber(":newMinute", 1)
                 );
     }
