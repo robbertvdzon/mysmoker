@@ -1,11 +1,11 @@
-package my.service.readstack.model;
+package my.service.querystack.model;
 
 import com.amazonaws.services.dynamodbv2.document.Item;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import my.service.writestack.model.Sample;
+import my.service.commandstack.model.Sample;
 
 @Data
 @AllArgsConstructor

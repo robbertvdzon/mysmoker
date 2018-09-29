@@ -1,10 +1,10 @@
 package my.service;
 
 
-import my.service.readstack.ReadService;
-import my.service.readstack.model.JsonSmokerSession;
-import my.service.writestack.WriteService;
-import my.service.writestack.model.SmokerSession;
+import my.service.querystack.ReadService;
+import my.service.querystack.model.JsonSmokerSession;
+import my.service.commandstack.WriteService;
+import my.service.commandstack.model.SmokerSession;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;

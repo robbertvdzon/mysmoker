@@ -1,8 +1,8 @@
-package my.service.readstack;
+package my.service.querystack;
 
-import my.service.readstack.model.JsonSmokerSession;
-import my.service.readstack.model.JsonSmokerState;
-import my.service.readstack.storage.SmokerQueryRepository;
+import my.service.querystack.model.JsonSmokerSession;
+import my.service.querystack.model.JsonSmokerState;
+import my.service.querystack.storage.SmokerQueryRepository;
 
 import java.util.List;
 

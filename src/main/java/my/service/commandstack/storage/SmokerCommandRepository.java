@@ -1,8 +1,6 @@
-package my.service.writestack.storage;
+package my.service.commandstack.storage;
 
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.document.*;
@@ -11,9 +9,9 @@ import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
 import my.service.common.storage.SmokerRepository;
-import my.service.writestack.model.Sample;
-import my.service.writestack.model.SmokerSession;
-import my.service.writestack.model.SmokerState;
+import my.service.commandstack.model.Sample;
+import my.service.commandstack.model.SmokerSession;
+import my.service.commandstack.model.SmokerState;
 
 import java.util.*;
 

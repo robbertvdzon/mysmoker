@@ -1,4 +1,4 @@
-package my.service.readstack.model;
+package my.service.querystack.model;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;

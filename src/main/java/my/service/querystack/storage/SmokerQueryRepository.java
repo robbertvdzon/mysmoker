@@ -1,18 +1,14 @@
-package my.service.readstack.storage;
+package my.service.querystack.storage;
 
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import my.service.common.storage.SmokerRepository;
-import my.service.readstack.model.JsonSample;
-import my.service.readstack.model.JsonSmokerSession;
-import my.service.readstack.model.JsonSmokerState;
+import my.service.querystack.model.JsonSample;
+import my.service.querystack.model.JsonSmokerSession;
+import my.service.querystack.model.JsonSmokerState;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;

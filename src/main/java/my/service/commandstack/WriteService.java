@@ -1,9 +1,9 @@
-package my.service.writestack;
+package my.service.commandstack;
 
-import my.service.writestack.model.Sample;
-import my.service.writestack.model.SmokerSession;
-import my.service.writestack.model.SmokerState;
-import my.service.writestack.storage.SmokerCommandRepository;
+import my.service.commandstack.model.Sample;
+import my.service.commandstack.model.SmokerSession;
+import my.service.commandstack.model.SmokerState;
+import my.service.commandstack.storage.SmokerCommandRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

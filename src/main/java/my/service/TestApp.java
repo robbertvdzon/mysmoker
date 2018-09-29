@@ -1,8 +1,8 @@
 package my.service;
 
-import my.service.readstack.ReadService;
-import my.service.writestack.storage.SmokerCommandRepository;
-import my.service.writestack.WriteService;
+import my.service.querystack.ReadService;
+import my.service.commandstack.storage.SmokerCommandRepository;
+import my.service.commandstack.WriteService;
 
 public class TestApp {
     private static WriteService writeService = new WriteService();

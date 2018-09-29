@@ -1,4 +1,4 @@
-package my.service.writestack.model;
+package my.service.commandstack.model;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
