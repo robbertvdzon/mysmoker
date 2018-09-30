@@ -10,7 +10,11 @@ import java.util.Date;
 
 public class WriteService {
 
-    SmokerCommandRepository smokerCommandRepository = new SmokerCommandRepository();
+    SmokerCommandRepository smokerCommandRepository;
+
+    public WriteService(SmokerCommandRepository smokerCommandRepository) {
+        this.smokerCommandRepository = smokerCommandRepository;
+    }
 
     public void removeSession(long sessionId) {
         System.out.println("remove session "+sessionId);

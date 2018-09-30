@@ -8,7 +8,11 @@ import java.util.List;
 
 public class ReadService {
 
-    private SmokerQueryRepository smokerReadRepository = new SmokerQueryRepository();
+    private SmokerQueryRepository smokerReadRepository;
+
+    public ReadService(SmokerQueryRepository smokerReadRepository) {
+        this.smokerReadRepository = smokerReadRepository;
+    }
 
     public List<JsonSmokerSession> listsessions() {
         return smokerReadRepository.listAllSessions();
