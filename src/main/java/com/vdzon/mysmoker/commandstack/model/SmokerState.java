@@ -1,14 +1,14 @@
-package my.service.commandstack.model;
+package com.vdzon.mysmoker.commandstack.model;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.vdzon.mysmoker.common.Const;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import static my.service.common.Const.SMOKERSTATE_TABLENAME;
 
-@DynamoDBTable(tableName = SMOKERSTATE_TABLENAME)
+@DynamoDBTable(tableName = Const.SMOKERSTATE_TABLENAME)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

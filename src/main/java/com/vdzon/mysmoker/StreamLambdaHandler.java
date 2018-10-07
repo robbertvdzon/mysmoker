@@ -1,4 +1,4 @@
-package my.service;
+package com.vdzon.mysmoker;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.serverless.exceptions.ContainerInitializationException;
@@ -9,7 +9,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import my.service.rest.RestHandler;
+import com.vdzon.mysmoker.rest.RestHandler;
 
 
 public class StreamLambdaHandler implements RequestHandler<AwsProxyRequest, AwsProxyResponse> {

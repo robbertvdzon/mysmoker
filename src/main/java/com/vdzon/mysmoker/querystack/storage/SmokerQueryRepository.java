@@ -1,29 +1,28 @@
-package my.service.querystack.storage;
+package com.vdzon.mysmoker.querystack.storage;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import my.service.common.storage.SmokerRepository;
-import my.service.querystack.model.JsonSample;
-import my.service.querystack.model.JsonSmokerSession;
-import my.service.querystack.model.JsonSmokerState;
+import com.vdzon.mysmoker.common.Const;
+import com.vdzon.mysmoker.querystack.model.JsonSample;
+import com.vdzon.mysmoker.querystack.model.JsonSmokerSession;
+import com.vdzon.mysmoker.querystack.model.JsonSmokerState;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static my.service.common.Const.SMOKERSAMPLES_TABLENAME;
-import static my.service.common.Const.SMOKERSESSIONS_TABLENAME;
-import static my.service.common.Const.SMOKERSTATE_TABLENAME;
-
-public class SmokerQueryRepository extends SmokerRepository {
+public class SmokerQueryRepository {
+    private AmazonDynamoDB ddb;
     private Table smokersamplesTable;
     private Table smokersessionsTable;
     private Table smokerstateTable;
 
     public SmokerQueryRepository(AmazonDynamoDB amazonDynamoDB) {
-        super(amazonDynamoDB);
+        ddb = amazonDynamoDB;
         initializeTables();
     }
 
@@ -34,12 +33,12 @@ public class SmokerQueryRepository extends SmokerRepository {
     }
 
     public JsonSmokerSession findSession(Long sessionId, Function<Long, Boolean> useLowSamples) {
-        return findSession(session -> session.getId()==sessionId, useLowSamples);
+        return findSession(session -> session.getId() == sessionId, useLowSamples);
     }
 
     public List<JsonSmokerSession> listAllSessions() {
         ScanSpec scanSpec = new ScanSpec();
-        return getScanResult(scanSpec, smokersessionsTable, JsonSmokerSession::fromItemWithoutSamples,  JsonSmokerSession::compareTo);
+        return getScanResult(scanSpec, smokersessionsTable, JsonSmokerSession::fromItemWithoutSamples, JsonSmokerSession::compareTo);
     }
 
     public JsonSmokerState loadState() {
@@ -54,11 +53,10 @@ public class SmokerQueryRepository extends SmokerRepository {
      Private functions
      */
     private void initializeTables() {
-        AmazonDynamoDB ddb = getDynamoDb();
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        smokersamplesTable = dynamoDB.getTable(SMOKERSAMPLES_TABLENAME);
-        smokersessionsTable = dynamoDB.getTable(SMOKERSESSIONS_TABLENAME);
-        smokerstateTable = dynamoDB.getTable(SMOKERSTATE_TABLENAME);
+        smokersamplesTable = dynamoDB.getTable(Const.SMOKERSAMPLES_TABLENAME);
+        smokersessionsTable = dynamoDB.getTable(Const.SMOKERSESSIONS_TABLENAME);
+        smokerstateTable = dynamoDB.getTable(Const.SMOKERSTATE_TABLENAME);
     }
 
     private JsonSmokerSession findSession(Predicate<? super JsonSmokerSession> predicate, Function<Long, Boolean> useLowSamples) {
@@ -108,4 +106,13 @@ public class SmokerQueryRepository extends SmokerRepository {
                 );
     }
 
+    private <T> List<T> getScanResult(ScanSpec scanSpec, Table table, Function<Item, T> toObject, Comparator<? super T> c) {
+        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
+        List<T> result = new ArrayList<>();
+        for (Item item : items) {
+            result.add(toObject.apply(item));
+        }
+        result.sort(c);
+        return result;
+    }
 }

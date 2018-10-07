@@ -1,4 +1,4 @@
-package my.service;
+package com.vdzon.mysmoker;
 
 import com.amazonaws.services.dynamodbv2.local.main.ServerRunner;
 import com.amazonaws.services.dynamodbv2.local.server.DynamoDBProxyServer;

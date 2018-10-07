@@ -1,4 +1,4 @@
-package my.service.commandstack.storage;
+package com.vdzon.mysmoker.commandstack.storage;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -8,29 +8,25 @@ import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
-import my.service.common.storage.SmokerRepository;
-import my.service.commandstack.model.Sample;
-import my.service.commandstack.model.SmokerSession;
-import my.service.commandstack.model.SmokerState;
+import com.vdzon.mysmoker.commandstack.model.Sample;
+import com.vdzon.mysmoker.commandstack.model.SmokerSession;
+import com.vdzon.mysmoker.commandstack.model.SmokerState;
+import com.vdzon.mysmoker.common.Const;
+import com.vdzon.mysmoker.common.storage.SmokerRepository;
 
 import java.util.*;
 
-import static my.service.common.Const.SMOKERSAMPLES_TABLENAME;
-import static my.service.common.Const.SMOKERSESSIONS_TABLENAME;
-import static my.service.common.Const.SMOKERSTATE_TABLENAME;
-
-public class SmokerCommandRepository extends SmokerRepository {
-
-    private final AmazonDynamoDB ddb = getDynamoDb();
+public class SmokerCommandRepository {
+    private AmazonDynamoDB ddb;
 
     public SmokerCommandRepository(AmazonDynamoDB amazonDynamoDB) {
-        super(amazonDynamoDB);
+        ddb = amazonDynamoDB;
     }
 
     public void createTablewhenNeeded() {
-        createTable(ddb, SMOKERSESSIONS_TABLENAME, "id", "N");
-        createTable(ddb, SMOKERSAMPLES_TABLENAME, "time", "N");
-        createTable(ddb, SMOKERSTATE_TABLENAME, "id", "N");
+        createTable(ddb, Const.SMOKERSESSIONS_TABLENAME, "id", "N");
+        createTable(ddb, Const.SMOKERSAMPLES_TABLENAME, "time", "N");
+        createTable(ddb, Const.SMOKERSTATE_TABLENAME, "id", "N");
     }
 
     public void storeSession(SmokerSession smokerSession) {
@@ -102,7 +98,7 @@ public class SmokerCommandRepository extends SmokerRepository {
 
     private void removeSamplesFromTable(long sessionId) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable(SMOKERSAMPLES_TABLENAME);
+        Table table = dynamoDB.getTable(Const.SMOKERSAMPLES_TABLENAME);
         findSamplesDates(ddb, sessionId).forEach(l -> {
             DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
                     .withPrimaryKey(new PrimaryKey("time", l));
@@ -112,7 +108,7 @@ public class SmokerCommandRepository extends SmokerRepository {
 
     private List<Long> findSamplesDates(AmazonDynamoDB ddb, long sessionId) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable(SMOKERSAMPLES_TABLENAME);
+        Table table = dynamoDB.getTable(Const.SMOKERSAMPLES_TABLENAME);
         ScanSpec scanSpec = new ScanSpec()
                 .withFilterExpression("sessionId = :id")
                 .withValueMap(new ValueMap()
@@ -129,10 +125,33 @@ public class SmokerCommandRepository extends SmokerRepository {
 
     private void removeSessionFromTable(long sessionId) {
         DynamoDB dynamoDB = new DynamoDB(ddb);
-        Table table = dynamoDB.getTable(SMOKERSESSIONS_TABLENAME);
+        Table table = dynamoDB.getTable(Const.SMOKERSESSIONS_TABLENAME);
         DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
                 .withPrimaryKey(new PrimaryKey("id", sessionId));
         table.deleteItem(deleteItemSpec);
+    }
+
+    private void createTable(AmazonDynamoDB dynamoDB, String tablename, String keyName, String keyType) {
+        ListTablesResult listTablesResult = dynamoDB.listTables();
+        boolean tableFound = listTablesResult.getTableNames().stream().anyMatch(name -> name.equals(tablename));
+        if (!tableFound) {
+            ArrayList<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();
+            keySchema.add(new KeySchemaElement().withAttributeName(keyName).withKeyType(KeyType.HASH)); // Partition
+
+            ArrayList<AttributeDefinition> attributeDefinitions = new ArrayList<AttributeDefinition>();
+            attributeDefinitions
+                    .add(new AttributeDefinition().withAttributeName(keyName).withAttributeType(keyType));
+
+            CreateTableRequest createTableRequest = new CreateTableRequest()
+                    .withTableName(tablename)
+                    .withKeySchema(keySchema)
+                    .withAttributeDefinitions(attributeDefinitions)
+                    .withProvisionedThroughput(new ProvisionedThroughput()
+                            .withReadCapacityUnits(5l)
+                            .withWriteCapacityUnits(5l)
+                    );
+            dynamoDB.createTable(createTableRequest);
+        }
     }
 
 }

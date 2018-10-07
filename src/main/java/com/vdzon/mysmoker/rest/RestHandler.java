@@ -1,13 +1,13 @@
-package my.service.rest;
+package com.vdzon.mysmoker.rest;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import my.service.commandstack.WriteService;
-import my.service.commandstack.model.SmokerSession;
-import my.service.commandstack.storage.SmokerCommandRepository;
-import my.service.querystack.ReadService;
-import my.service.querystack.storage.SmokerQueryRepository;
+import com.vdzon.mysmoker.commandstack.WriteService;
+import com.vdzon.mysmoker.commandstack.model.SmokerSession;
+import com.vdzon.mysmoker.commandstack.storage.SmokerCommandRepository;
+import com.vdzon.mysmoker.querystack.ReadService;
+import com.vdzon.mysmoker.querystack.storage.SmokerQueryRepository;
 import spark.Request;
 import spark.Response;
 

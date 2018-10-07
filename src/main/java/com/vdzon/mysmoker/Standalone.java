@@ -1,9 +1,9 @@
-package my.service;
+package com.vdzon.mysmoker;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import my.service.rest.RestHandler;
+import com.vdzon.mysmoker.rest.RestHandler;
 
 
 public class Standalone {

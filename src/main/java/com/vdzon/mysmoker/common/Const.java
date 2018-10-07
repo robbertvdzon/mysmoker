@@ -1,4 +1,4 @@
-package my.service.common;
+package com.vdzon.mysmoker.common;
 
 public class Const {
     public static final String SMOKERSAMPLES_TABLENAME = "smokersamples";

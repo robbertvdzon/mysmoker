@@ -1,8 +1,8 @@
-package my.service.querystack;
+package com.vdzon.mysmoker.querystack;
 
-import my.service.querystack.model.JsonSmokerSession;
-import my.service.querystack.model.JsonSmokerState;
-import my.service.querystack.storage.SmokerQueryRepository;
+import com.vdzon.mysmoker.querystack.model.JsonSmokerSession;
+import com.vdzon.mysmoker.querystack.model.JsonSmokerState;
+import com.vdzon.mysmoker.querystack.storage.SmokerQueryRepository;
 
 import java.util.List;
 

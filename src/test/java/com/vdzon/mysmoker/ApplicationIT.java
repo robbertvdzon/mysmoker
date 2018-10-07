@@ -1,4 +1,4 @@
-package my.service;
+package com.vdzon.mysmoker;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
@@ -6,12 +6,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
-import com.jayway.restassured.response.ResponseBody;
-import my.service.querystack.model.JsonSample;
-import my.service.querystack.model.JsonSmokerSession;
-import my.service.rest.RestHandler;
-import my.service.rest.SampleJsonData;
-import org.junit.Assert;
+import com.vdzon.mysmoker.querystack.model.JsonSample;
+import com.vdzon.mysmoker.querystack.model.JsonSmokerSession;
+import com.vdzon.mysmoker.rest.RestHandler;
+import com.vdzon.mysmoker.rest.SampleJsonData;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;

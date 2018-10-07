@@ -1,9 +1,9 @@
-package my.service.commandstack;
+package com.vdzon.mysmoker.commandstack;
 
-import my.service.commandstack.model.Sample;
-import my.service.commandstack.model.SmokerSession;
-import my.service.commandstack.model.SmokerState;
-import my.service.commandstack.storage.SmokerCommandRepository;
+import com.vdzon.mysmoker.commandstack.model.SmokerSession;
+import com.vdzon.mysmoker.commandstack.model.SmokerState;
+import com.vdzon.mysmoker.commandstack.model.Sample;
+import com.vdzon.mysmoker.commandstack.storage.SmokerCommandRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

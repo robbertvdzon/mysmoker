@@ -15,16 +15,16 @@ STAGE_NAME="api"
 
 echo "Creating Lambda function"
 aws lambda create-function \
-	--function-name "$LAMBDA_FUNCTION_NAME" \
+	--function-name "$LAMBDA_NAME" \
 	--runtime java8 \
 	--role "$LAMBDA_ROLE_ARN" \
 	--timeout 15 \
-	--handler my.service.StreamLambdaHandler::handleRequest \
-	--zip-file fileb://target/mysmoker-1.0-SNAPSHOT.jar --memory-size 512
+	--handler "$HANDLER_FUNCTION" \
+	--zip-file fileb://target/"$JAR_FILENAME" --memory-size 512
 
-echo "Creating API $API_NAME..."
+echo "Creating API $LAMBDA_NAME..."
 REST_API_ID=$(aws apigateway create-rest-api \
-	--name "$API_NAME" \
+	--name "$LAMBDA_NAME" \
 	--query id --output text)
 echo "API created with ID $REST_API_ID"
 
@@ -53,7 +53,7 @@ setupApiMethod () {
 		--authorization-type NONE \
 		--request-parameters method.request.path.proxy=true
 
-	echo "Integrating $RESOURCE_DESCRIPTION resource with Lambda function '$LAMBDA_FUNCTION_NAME'..."
+	echo "Integrating $RESOURCE_DESCRIPTION resource with Lambda function '$LAMBDA_NAME'..."
 	aws apigateway put-integration \
 		--rest-api-id "$REST_API_ID" \
 		--resource-id "$RESOURCE_ID" \
@@ -62,10 +62,9 @@ setupApiMethod () {
 		--type AWS_PROXY \
 		--content-handling CONVERT_TO_TEXT \
 		--cache-key-parameters "method.request.path.proxy" \
-		--uri "arn:aws:apigateway:$AWS_REGION:lambda:path/2015-03-31/functions/arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT:function:$LAMBDA_FUNCTION_NAME/invocations"
+		--uri "arn:aws:apigateway:$AWS_REGION:lambda:path/2015-03-31/functions/arn:aws:lambda:$AWS_REGION:$AWS_ACCOUNT:function:$LAMBDA_NAME/invocations"
 
 	echo "Completing $RESOURCE_DESCRIPTION resource integration by configuring method response..."
-	# TODO - Not precisely the same as UI - that has null as opposed to "Empty" in response model
 	aws apigateway put-method-response \
 		--rest-api-id "$REST_API_ID" \
 		--resource-id "$RESOURCE_ID" \
@@ -84,7 +83,7 @@ aws apigateway create-deployment \
 
 echo "Updating Lambda to be executable by API..."
 aws lambda add-permission \
-	--function-name "$LAMBDA_FUNCTION_NAME" \
+	--function-name "$LAMBDA_NAME" \
 	--statement-id "api-$REST_API_ID-$ROOT_RESOURCE_ID" \
 	--action lambda:InvokeFunction \
 	--principal apigateway.amazonaws.com \
@@ -92,6 +91,6 @@ aws lambda add-permission \
 
 echo
 echo "*** API Setup Complete!"
-echo "API $API_NAME (ID $REST_API_ID) is available at https://$REST_API_ID.execute-api.$AWS_REGION.amazonaws.com/$STAGE_NAME"
+echo "API $LAMBDA_NAME (ID $REST_API_ID) is available at https://$REST_API_ID.execute-api.$AWS_REGION.amazonaws.com/$STAGE_NAME"
 echo "Try 'curl'ing it!"
 echo

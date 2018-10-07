@@ -1,4 +1,4 @@
-package my.service.rest;
+package com.vdzon.mysmoker.rest;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

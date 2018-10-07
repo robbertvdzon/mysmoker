@@ -1,4 +1,4 @@
-package my.service.querystack.model;
+package com.vdzon.mysmoker.querystack.model;
 
 import com.amazonaws.services.dynamodbv2.document.Item;
 import lombok.AllArgsConstructor;

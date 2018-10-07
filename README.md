@@ -35,6 +35,8 @@ https://gist.github.com/mspeer383/fbb5f2e283d98be3920bd97607666bfd
 The URL to be used will be printed by this command.
 Check the API Gateway - resource - stages - api to find this URL afterwards
 
+
+
 # Redeploy the code 
 ./aws_redeploy.sh
 
