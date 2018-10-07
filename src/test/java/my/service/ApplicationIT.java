@@ -64,7 +64,7 @@ public class ApplicationIT {
                 .contentType(ContentType.JSON)
                 .body(data)
                 .when()
-                .put("http://localhost:4567/add")
+                .post("http://localhost:4567/add")
                 .then()
                 .statusCode(201);
 
@@ -90,7 +90,7 @@ public class ApplicationIT {
                 .contentType(ContentType.JSON)
                 .body(data)
                 .when()
-                .put("http://localhost:4567/add")
+                .post("http://localhost:4567/add")
                 .then()
                 .statusCode(201);
 
@@ -106,7 +106,7 @@ public class ApplicationIT {
                 .contentType(ContentType.JSON)
                 .body(data)
                 .when()
-                .put("http://localhost:4567/newsession")
+                .post("http://localhost:4567/newsession")
                 .then()
                 .statusCode(201);
 

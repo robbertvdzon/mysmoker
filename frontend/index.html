@@ -6,7 +6,7 @@
 
         function newSession(){
             var smokerAPI = "https://mysmoker.api.vdzon.com/newsession";
-            $.put(smokerAPI);
+            $.post(smokerAPI);
             alert("created")
         }
         function setTemp(){
@@ -18,7 +18,7 @@
 
         function removeSession(sessie){
             var smokerAPI = "https://mysmoker.api.vdzon.com/removesession/"+sessie;
-            $.delete(smokerAPI)
+            $.post(smokerAPI)
             alert("removed "+sessie);
         }
 
