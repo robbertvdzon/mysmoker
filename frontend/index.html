@@ -6,19 +6,19 @@
 
         function newSession(){
             var smokerAPI = "https://mysmoker.api.vdzon.com/newsession";
-            $.get(smokerAPI);
+            $.put(smokerAPI);
             alert("created")
         }
         function setTemp(){
             var temp = $("#smokerTempSetId").val();
             var smokerAPI = "https://mysmoker.api.vdzon.com/settemp/"+temp;
-            $.get(smokerAPI)
+            $.post(smokerAPI)
             alert("new temp set")
         }
 
         function removeSession(sessie){
             var smokerAPI = "https://mysmoker.api.vdzon.com/removesession/"+sessie;
-            $.get(smokerAPI)
+            $.delete(smokerAPI)
             alert("removed "+sessie);
         }
 
