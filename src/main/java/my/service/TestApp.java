@@ -7,11 +7,20 @@ import my.service.commandstack.WriteService;
 import my.service.commandstack.storage.SmokerCommandRepository;
 import my.service.querystack.ReadService;
 import my.service.querystack.storage.SmokerQueryRepository;
+import my.service.rest.RestHandler;
 
 public class TestApp {
 
     public static void main(String[] args) {
         AmazonDynamoDB amazonDynamoDB = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
+
+        new RestHandler(amazonDynamoDB);
+        try {
+            Thread.sleep(60000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         SmokerCommandRepository smokerCommandRepository = new SmokerCommandRepository(amazonDynamoDB);
         SmokerQueryRepository smokerQueryRepository = new SmokerQueryRepository(amazonDynamoDB);
         WriteService writeService = new WriteService(smokerCommandRepository);
