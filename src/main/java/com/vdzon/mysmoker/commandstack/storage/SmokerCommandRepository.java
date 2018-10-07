@@ -12,9 +12,11 @@ import com.vdzon.mysmoker.commandstack.model.Sample;
 import com.vdzon.mysmoker.commandstack.model.SmokerSession;
 import com.vdzon.mysmoker.commandstack.model.SmokerState;
 import com.vdzon.mysmoker.common.Const;
-import com.vdzon.mysmoker.common.storage.SmokerRepository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SmokerCommandRepository {
     private AmazonDynamoDB ddb;
@@ -60,7 +62,7 @@ public class SmokerCommandRepository {
                 .withExpressionAttributeValues(attributeValues);
 
         List<SmokerState> allStates = mapper.scan(SmokerState.class, scanExpression);
-        return allStates.stream().findFirst().orElseGet(() -> createNewState());
+        return allStates.stream().findFirst().orElseGet(this::createNewState);
     }
 
     public SmokerSession loadSession(long sessionId) {

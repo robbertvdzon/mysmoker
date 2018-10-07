@@ -10,7 +10,7 @@ import java.util.Date;
 
 public class WriteService {
 
-    SmokerCommandRepository smokerCommandRepository;
+    private SmokerCommandRepository smokerCommandRepository;
 
     public WriteService(SmokerCommandRepository smokerCommandRepository) {
         this.smokerCommandRepository = smokerCommandRepository;

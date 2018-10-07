@@ -28,8 +28,7 @@ public class SmokerQueryRepository {
 
     public JsonSmokerSession findLastSession(Function<Long, Boolean> useLowSamples) {
         long sessionId = loadState().getCurrentSessionId();
-        JsonSmokerSession result = findSession(session -> session.getId() == sessionId, useLowSamples);
-        return result;
+        return findSession(session -> session.getId() == sessionId, useLowSamples);
     }
 
     public JsonSmokerSession findSession(Long sessionId, Function<Long, Boolean> useLowSamples) {
