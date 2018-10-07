@@ -31,13 +31,13 @@ and
 https://gist.github.com/mspeer383/fbb5f2e283d98be3920bd97607666bfd
 
 # Create the AWS Lambda and API Gateway
-./aws_create
+./aws_create.sh
 The URL to be used will be printed by this command.
 Check the API Gateway - resource - stages - api to find this URL afterwards
 
 # Redeploy the code 
-./aws_redeploy
+./aws_redeploy.sh
 
 # Remove the Lambda and API Gateway 
-./aws_delete
+./aws_delete.sh
 
