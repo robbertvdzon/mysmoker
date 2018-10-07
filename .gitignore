@@ -6,3 +6,4 @@
 *.old
 *.tab
 target
+native-libs

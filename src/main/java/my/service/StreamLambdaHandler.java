@@ -1,9 +1,12 @@
 package my.service;
 
+import com.amazonaws.regions.Regions;
 import com.amazonaws.serverless.exceptions.ContainerInitializationException;
 import com.amazonaws.serverless.proxy.model.AwsProxyRequest;
 import com.amazonaws.serverless.proxy.model.AwsProxyResponse;
 import com.amazonaws.serverless.proxy.spark.SparkLambdaContainerHandler;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.google.gson.Gson;
@@ -35,8 +38,10 @@ public class StreamLambdaHandler implements RequestHandler<AwsProxyRequest, AwsP
 
     private void defineRoutes() {
         // construct objects
-        SmokerCommandRepository smokerCommandRepository = new SmokerCommandRepository();
-        SmokerQueryRepository smokerReadRepository = new SmokerQueryRepository();
+        AmazonDynamoDB amazonDynamoDB = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
+
+        SmokerCommandRepository smokerCommandRepository = new SmokerCommandRepository(amazonDynamoDB);
+        SmokerQueryRepository smokerReadRepository = new SmokerQueryRepository(amazonDynamoDB);
         WriteService writeService = new WriteService(smokerCommandRepository);
         ReadService readService = new ReadService(smokerReadRepository);
 

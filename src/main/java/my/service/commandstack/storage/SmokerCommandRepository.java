@@ -23,6 +23,10 @@ public class SmokerCommandRepository extends SmokerRepository {
 
     private final AmazonDynamoDB ddb = getDynamoDb();
 
+    public SmokerCommandRepository(AmazonDynamoDB amazonDynamoDB) {
+        super(amazonDynamoDB);
+    }
+
     public void createTablewhenNeeded() {
         createTable(ddb, SMOKERSESSIONS_TABLENAME, "id", "N");
         createTable(ddb, SMOKERSAMPLES_TABLENAME, "time", "N");

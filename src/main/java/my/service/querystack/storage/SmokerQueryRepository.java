@@ -22,7 +22,8 @@ public class SmokerQueryRepository extends SmokerRepository {
     private Table smokersessionsTable;
     private Table smokerstateTable;
 
-    public SmokerQueryRepository() {
+    public SmokerQueryRepository(AmazonDynamoDB amazonDynamoDB) {
+        super(amazonDynamoDB);
         initializeTables();
     }
 

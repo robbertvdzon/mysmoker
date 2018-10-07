@@ -1,8 +1,6 @@
 package my.service.common.storage;
 
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.ItemCollection;
 import com.amazonaws.services.dynamodbv2.document.ScanOutcome;
@@ -16,8 +14,15 @@ import java.util.List;
 import java.util.function.Function;
 
 public class SmokerRepository {
+    private AmazonDynamoDB amazonDynamoDB;
+
+    public SmokerRepository(AmazonDynamoDB amazonDynamoDB) {
+
+        this.amazonDynamoDB = amazonDynamoDB;
+    }
+
     protected AmazonDynamoDB getDynamoDb() {
-        return AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_CENTRAL_1).build();
+        return amazonDynamoDB;
     }
 
     protected <T> List<T> getScanResult(ScanSpec scanSpec, Table table, Function<Item, T> toObject, Comparator<? super T> c) {
